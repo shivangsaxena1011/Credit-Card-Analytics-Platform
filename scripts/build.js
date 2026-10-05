@@ -24,10 +24,20 @@ execSync('npm run build', {
   env: { ...process.env, NODE_ENV: 'production' }
 });
 
-// 3. Mirror .next artifacts to root for root-level Vercel runner
-console.log('Mirroring .next directory to root...');
+// 3. Mirror .next, .vercel, and public artifacts to root for root-level Vercel runner
+console.log('Mirroring build artifacts (.next, .vercel, public) to root...');
 if (fs.existsSync(frontendNextDir)) {
   fs.cpSync(frontendNextDir, rootNextDir, { recursive: true });
+}
+const frontendVercelDir = path.join(frontendDir, '.vercel');
+const rootVercelDir = path.join(__dirname, '..', '.vercel');
+if (fs.existsSync(frontendVercelDir)) {
+  fs.cpSync(frontendVercelDir, rootVercelDir, { recursive: true });
+}
+const frontendPublicDir = path.join(frontendDir, 'public');
+const rootPublicDir = path.join(__dirname, '..', 'public');
+if (fs.existsSync(frontendPublicDir) && !fs.existsSync(rootPublicDir)) {
+  fs.cpSync(frontendPublicDir, rootPublicDir, { recursive: true });
 }
 
 console.log('--- CreditIQ Build & Artifact Mirror Complete ---');
