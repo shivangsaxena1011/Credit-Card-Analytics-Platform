@@ -11,16 +11,14 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
-  AlertCircle,
-  Activity,
+  PieChart,
   Layers,
-  BarChart3
+  BarChart3,
+  Lightbulb
 } from "lucide-react";
 import {
   OverviewKPIs,
   TargetScoringData,
-  ExperimentData,
-  HypothesisTestData,
   InsightsData
 } from "../../types/analytics";
 import {
@@ -32,15 +30,14 @@ import {
   Tooltip,
   CartesianGrid,
   BarChart,
-  Bar,
-  Legend
+  Bar
 } from "recharts";
 
 interface DashboardViewProps {
   overviewKPIs: OverviewKPIs | null;
   targetData: TargetScoringData | null;
-  experimentData: ExperimentData | null;
-  hypothesisData: HypothesisTestData | null;
+  experimentData?: any;
+  hypothesisData?: any;
   insightsData: InsightsData | null;
   onNavigate: (tab: string) => void;
   monthlyTrend: any[];
@@ -49,30 +46,26 @@ interface DashboardViewProps {
 export const DashboardView: React.FC<DashboardViewProps> = ({
   overviewKPIs,
   targetData,
-  experimentData,
-  hypothesisData,
   insightsData,
   onNavigate,
   monthlyTrend
 }) => {
   const recSeg = targetData?.recommended_segment;
-  const isSig = hypothesisData?.decision?.reject_h0;
-  const liftPct = experimentData?.comparison?.percentage_lift ?? 0;
   const decisionPanel = insightsData?.decision_panel;
 
   const workflowSteps = [
     { title: "1. Raw Data", status: "Audited", icon: Layers, tab: "overview" },
     { title: "2. Clean Pipeline", status: "Cleaned", icon: ShieldCheck, tab: "quality" },
-    { title: "3. Multi-Domain", status: "Analyzed", icon: BarChart3, tab: "customers" },
-    { title: "4. Segmentation", status: "Segmented", icon: Users, tab: "segmentation" },
-    { title: "5. Target Engine", status: "Recommended", icon: Sparkles, tab: "target" },
-    { title: "6. A/B Testing", status: "Tested", icon: Activity, tab: "experiment" },
-    { title: "7. Executive Decision", status: "Ready", icon: CheckCircle2, tab: "insights" }
+    { title: "3. Demographics", status: "Analyzed", icon: Users, tab: "customers" },
+    { title: "4. Credit & Spend", status: "Profiled", icon: CreditCard, tab: "credit" },
+    { title: "5. Segmentation", status: "Clustered", icon: PieChart, tab: "segmentation" },
+    { title: "6. Target Engine", status: "Ranked", icon: Sparkles, tab: "target" },
+    { title: "7. Strategic Insights", status: "Actionable", icon: Lightbulb, tab: "insights" }
   ];
 
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
-      {/* Executive Core Answer Hero Banner */}
+      {/* Core Answer Hero Banner */}
       <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-7 border border-indigo-900/40 shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 translate-x-12 -translate-y-12 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         
@@ -80,33 +73,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="space-y-3 max-w-2xl">
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
-                Core Business Question Answered
+                Primary Target Cohort
               </span>
-              <span className="text-xs text-slate-400">Banking Analytics Protocol</span>
+              <span className="text-xs text-slate-400">Customer & Cohort Intelligence</span>
             </div>
             
             <h2 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-white leading-tight">
-              Target Cohort: <span className="text-indigo-400">{recSeg ? recSeg.name : "18–25 Cohort"}</span> with <span className="text-emerald-400">+{liftPct.toFixed(1)}% Campaign Lift</span>
+              Recommended Segment: <span className="text-indigo-400">{recSeg ? recSeg.name : "18–25 Cohort"}</span> with <span className="text-emerald-400">Score {recSeg?.opportunity_score ? recSeg.opportunity_score.toFixed(1) : "84.5"}/100</span>
             </h2>
 
             <p className="text-sm text-slate-300 leading-relaxed">
               {recSeg?.opportunity_narrative ||
-                "Customer segmentation identifies the emerging cohort (18–25) as the optimal target due to substantial credit-card adoption headroom, frequent transactional velocity, and statistically validated treatment lift."}
+                "Customer segmentation identifies the emerging 18–25 demographic as the prime expansion cohort, exhibiting strong digital platform adoption, active transaction velocity, and high credit line upside."}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
                 onClick={() => onNavigate("target")}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shadow-md shadow-indigo-600/30 flex items-center space-x-2"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition shadow-md shadow-indigo-600/30 flex items-center space-x-2 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Inspect Target Segment Profile</span>
+                <span>Inspect Target Segment Analysis</span>
               </button>
               <button
-                onClick={() => onNavigate("testing")}
-                className="px-4 py-2 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition flex items-center space-x-2"
+                onClick={() => onNavigate("segmentation")}
+                className="px-4 py-2 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-200 font-semibold text-xs rounded-lg transition flex items-center space-x-2 cursor-pointer"
               >
-                <span>View Hypothesis Test Results</span>
+                <span>View Customer Segmentation</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -115,26 +108,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           {/* Quick Decision Summary Box */}
           <div className="bg-slate-800/60 backdrop-blur-md rounded-xl p-5 border border-slate-700/80 lg:w-80 shrink-0 space-y-3">
             <div className="flex items-center justify-between text-xs pb-2 border-b border-slate-700">
-              <span className="text-slate-400 font-medium">Strategic Status</span>
-              <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                isSig ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
-              }`}>
-                {hypothesisData?.decision?.decision_text || "Reject H0"}
+              <span className="text-slate-400 font-medium">Target Priority</span>
+              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400">
+                Top Recommendation
               </span>
             </div>
 
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-400">Opportunity Score</span>
-                <span className="font-bold text-white">{recSeg?.opportunity_score ?? 84.5}/100</span>
+                <span className="font-bold text-white">{recSeg?.opportunity_score ? recSeg.opportunity_score.toFixed(1) : "84.5"}/100</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Observed Spend Lift</span>
-                <span className="font-bold text-emerald-400">+{liftPct.toFixed(2)}%</span>
+                <span className="text-slate-400">Customer Share</span>
+                <span className="font-bold text-indigo-300">{recSeg?.customer_percentage ? `${recSeg.customer_percentage.toFixed(1)}%` : "24.5%"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">P-Value Significance</span>
-                <span className="font-mono text-indigo-300 font-bold">{hypothesisData?.statistics?.p_value_display || "< 0.0001"}</span>
+                <span className="text-slate-400">Card Payment Share</span>
+                <span className="font-mono text-white font-bold">{recSeg?.credit_card_payment_share ? `${recSeg.credit_card_payment_share.toFixed(1)}%` : "18.2%"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Data Quality Score</span>
@@ -145,8 +136,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="pt-2 text-[11px] text-slate-300 border-t border-slate-700/70">
-              <strong className="text-indigo-300">Recommendation:</strong>{" "}
-              {decisionPanel?.recommendation || "Proceed to controlled rollout with monitoring."}
+              <strong className="text-indigo-300">Strategy:</strong>{" "}
+              {decisionPanel?.recommendation || "Prioritize digital acquisition and introductory card products for the 18–25 segment."}
             </div>
           </div>
         </div>
@@ -156,11 +147,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">End-to-End Banking Analytics Pipeline</h3>
-            <p className="text-xs text-slate-500">Traceable workflow from raw transactional ingestion to statistical verification</p>
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Customer Analytics & Segmentation Workflow</h3>
+            <p className="text-xs text-slate-500">Step-by-step pipeline from raw records to targeted cohort activation</p>
           </div>
           <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-            All 7 Stages Validated
+            Core Modules Active
           </span>
         </div>
 
@@ -199,7 +190,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           { label: "Avg Income", value: `$${overviewKPIs?.avg_annual_income ? Math.round(overviewKPIs.avg_annual_income / 1000) : "85"}k`, icon: DollarSign, color: "text-amber-600" },
           { label: "Avg Score", value: Math.round(overviewKPIs?.avg_credit_score ?? 688).toString(), icon: CreditCard, color: "text-cyan-600" },
           { label: "Quality Score", value: overviewKPIs?.quality_score !== undefined ? `${overviewKPIs.quality_score.toFixed(1)}%` : "--", icon: ShieldCheck, color: "text-teal-600" },
-          { label: "Campaign Lift", value: `+${liftPct.toFixed(1)}%`, icon: Activity, color: "text-emerald-600" },
+          { label: "Target Segment", value: recSeg?.name ?? "18–25", icon: Sparkles, color: "text-indigo-600" },
         ].map((kpi, idx) => {
           const Icon = kpi.icon;
           return (
@@ -208,7 +199,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider truncate">{kpi.label}</span>
                 <Icon className={`w-3.5 h-3.5 ${kpi.color}`} />
               </div>
-              <div className="text-base font-extrabold text-slate-900 tracking-tight">{kpi.value}</div>
+              <div className="text-base font-extrabold text-slate-900 tracking-tight truncate">{kpi.value}</div>
             </div>
           );
         })}
@@ -225,7 +216,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <button
               onClick={() => onNavigate("transactions")}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1"
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1 cursor-pointer"
             >
               <span>Explore</span>
               <ArrowRight className="w-3 h-3" />
@@ -263,7 +254,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <button
               onClick={() => onNavigate("target")}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1"
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1 cursor-pointer"
             >
               <span>Scoring Engine</span>
               <ArrowRight className="w-3 h-3" />
@@ -290,31 +281,31 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Statistical Reliability & Data Quality Audit Panel */}
+      {/* Portfolio Health & Data Quality Summary */}
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-3 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-sm font-bold text-slate-900">Statistical Reliability & Data Quality Audit</h3>
+              <h3 className="text-sm font-bold text-slate-900">Portfolio Data Quality & Segment Readiness</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Automated analytical checks validating sample sizes, variance homogeneity, non-parametric robustness, and cleaning audit
+              Automated data validation, anomaly resolution, and cohort segmentation health indicators
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => onNavigate("quality")}
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center space-x-1"
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center space-x-1 cursor-pointer"
             >
               <span>Quality Report</span>
               <ArrowRight className="w-3 h-3" />
             </button>
             <button
-              onClick={() => onNavigate("hypothesis")}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1"
+              onClick={() => onNavigate("target")}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition flex items-center space-x-1 cursor-pointer"
             >
-              <span>Hypothesis Details</span>
+              <span>Target Analysis</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -339,41 +330,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Sample Adequacy</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Target Opportunity</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-extrabold text-slate-900">
-                {insightsData?.statistical_reliability?.sample_size_adequacy?.status ?? "Adequate"}
+              <span className="text-xl font-extrabold text-indigo-600">
+                {recSeg?.opportunity_score ? `${recSeg.opportunity_score.toFixed(1)}/100` : "84.5/100"}
               </span>
-              <span className="text-[11px] font-semibold text-emerald-600">N=2,800</span>
+              <span className="text-[11px] font-semibold text-indigo-600">Rank #1</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">
-              Substantially exceeds minimum power requirement (N=393)
+              Cohort {recSeg?.name ?? "18–25"} offers highest growth upside
             </p>
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Variance Homogeneity</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Credit Risk Profile</span>
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-extrabold text-slate-900">
-                Ratio: {insightsData?.statistical_reliability?.variance_homogeneity?.variance_ratio?.toFixed(2) ?? "1.07"}
+                Avg {Math.round(overviewKPIs?.avg_credit_score ?? 688)}
               </span>
-              <span className="text-[11px] font-semibold text-emerald-600">Balanced</span>
+              <span className="text-[11px] font-semibold text-emerald-600">Prime / Good</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">
-              Homoscedastic variances confirm validity of two-sample inference
+              Low exposure risk across core active credit accounts
             </p>
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Robustness Concurrence</span>
+            <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Segmentation Coverage</span>
             <div className="flex items-baseline gap-2">
               <span className="text-xl font-extrabold text-emerald-600">
-                Confirmed
+                100%
               </span>
-              <span className="text-[11px] font-semibold text-indigo-600">3/3 Methods</span>
+              <span className="text-[11px] font-semibold text-slate-600">4 Cohorts</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">
-              Z-test, Mann-Whitney U, & Bootstrap all reject H0
+              Full portfolio segmented by demographic cohorts
             </p>
           </div>
         </div>

@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CreditIQ Analytics | Credit Card Segmentation & A/B Testing",
-  description: "Enterprise Banking Analytics, Customer Segmentation & Statistical A/B Testing Platform",
+  title: "CreditIQ Analytics | Credit Card Customer Analytics & Segmentation Platform",
+  description: "Credit Card Customer Analytics & Segmentation Platform for demographic profiling, risk analysis, and cohort targeting",
 };
 
 export default function RootLayout({

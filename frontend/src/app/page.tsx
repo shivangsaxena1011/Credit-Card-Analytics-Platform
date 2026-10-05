@@ -13,9 +13,6 @@ import { CreditAnalyticsView } from "../components/views/CreditAnalyticsView";
 import { TransactionAnalyticsView } from "../components/views/TransactionAnalyticsView";
 import { SegmentationView } from "../components/views/SegmentationView";
 import { TargetSegmentView } from "../components/views/TargetSegmentView";
-import { CampaignExperimentView } from "../components/views/CampaignExperimentView";
-import { PowerAnalysisView } from "../components/views/PowerAnalysisView";
-import { HypothesisTestingView } from "../components/views/HypothesisTestingView";
 import { InsightsView } from "../components/views/InsightsView";
 import { DataExplorerView } from "../components/views/DataExplorerView";
 import { ExportReportView } from "../components/views/ExportReportView";
@@ -32,9 +29,6 @@ import {
   TransactionAnalyticsData,
   SegmentationData,
   TargetScoringData,
-  ExperimentData,
-  PowerAnalysisData,
-  HypothesisTestData,
   InsightsData,
   PipelineStages,
   AgeGroupConfig
@@ -71,7 +65,7 @@ export default function Home() {
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "info" | "warning"; text: string } | null>(null);
   const [engine, setEngine] = useState<string>("typescript-standalone");
 
-  // Analytics states
+  // Core Analytics states
   const [pipelineStages, setPipelineStages] = useState<PipelineStages>(DEFAULT_STAGES);
   const [isCleaned, setIsCleaned] = useState<boolean>(true);
   const [overviewData, setOverviewData] = useState<{
@@ -93,82 +87,65 @@ export default function Home() {
   const [transactionData, setTransactionData] = useState<TransactionAnalyticsData | null>(null);
   const [segmentationData, setSegmentationData] = useState<SegmentationData | null>(null);
   const [targetData, setTargetData] = useState<TargetScoringData | null>(null);
-  const [experimentData, setExperimentData] = useState<ExperimentData | null>(null);
-  const [powerData, setPowerData] = useState<PowerAnalysisData | null>(null);
-  const [hypothesisData, setHypothesisData] = useState<HypothesisTestData | null>(null);
   const [insightsData, setInsightsData] = useState<InsightsData | null>(null);
 
-  // Page title mapping
+  // Focused Page title mapping
   const titles: Record<string, { title: string; subtitle: string }> = {
     dashboard: {
-      title: "Executive Intelligence Dashboard",
-      subtitle: "Unified banking analytics, customer segmentation & campaign A/B testing overview"
+      title: "Customer Analytics Dashboard",
+      subtitle: "Credit card customer segmentation, risk profiling, and demographic targeting overview"
     },
     overview: {
       title: "Portfolio & Data Overview",
       subtitle: "High-level demographic distributions, credit metrics, and transaction volume trends"
     },
     quality: {
-      title: "Data Quality & Cleaning Pipeline",
+      title: "Data Quality & Cleaning",
       subtitle: "Dynamic quality score, anomaly detection, and before-vs-after remediation audit"
     },
     customers: {
-      title: "Customer Demographic Analytics",
+      title: "Customer Analytics",
       subtitle: "Granular breakdown of customer age, income distribution, location, and employment"
     },
     credit: {
-      title: "Credit Risk & Exposure Analytics",
-      subtitle: "Underwriting limits, utilization rates, revolving debt, and Pearson correlation matrix"
+      title: "Credit Risk & Exposure",
+      subtitle: "Credit limits, utilization rates, revolving balances, and correlation matrix"
     },
     transactions: {
-      title: "Transaction & Merchant Dynamics",
+      title: "Transaction Analytics",
       subtitle: "Purchase volume, platform market shares, payment rails, and category cross-tabs"
     },
     segmentation: {
-      title: "Customer Age Segmentation",
-      subtitle: "Configurable cohort clustering with 11-dimension comparative financial benchmarking"
+      title: "Customer Segmentation",
+      subtitle: "Configurable demographic cohort clustering and comparative financial benchmarking"
     },
     target: {
-      title: "Target Segment Recommendation Engine",
+      title: "Target Segment Analysis",
       subtitle: "Multi-criteria weighted optimization model scoring candidate segments for campaign acquisition"
     },
-    experiment: {
-      title: "Campaign Experiment Workspace",
-      subtitle: "A/B testing descriptive statistics, distribution comparisons, and spend lift metrics"
-    },
-    power: {
-      title: "Statistical Power & Sample Sizing",
-      subtitle: "Power calculation, sensitivity grids, and Cohen's d effect size sample curves"
-    },
-    testing: {
-      title: "Statistical Hypothesis Testing",
-      subtitle: "Rigorous two-sample Z/t-tests with critical regions, p-values, and decision rules"
-    },
     insights: {
-      title: "Automated Insights & Business Directives",
-      subtitle: "Synthesized portfolio findings, empirical evidence, and staged rollout directives"
+      title: "Insights & Recommendations",
+      subtitle: "Synthesized portfolio findings, empirical evidence, and cohort strategy directives"
     },
     explorer: {
-      title: "Interactive Data Explorer",
+      title: "Data Explorer",
       subtitle: "Full-text record inspection, search, sorting, and CSV downloads across raw & cleaned datasets"
     },
     report: {
-      title: "Executive Report & Export",
-      subtitle: "Publication-ready intelligence document with browser printing and CSV exports"
+      title: "Export & Report",
+      subtitle: "Strategic customer segmentation report with browser printing and CSV exports"
     },
     settings: {
-      title: "Simulation Settings & Seed Control",
-      subtitle: "Configure random seeds, reset synthetic datasets, and verify environmental status"
+      title: "Settings & Reset",
+      subtitle: "Reset synthetic datasets, configure simulation parameters, and check engine runtime status"
     }
   };
 
-  // Fetch all analytics data
-  // Fetch all analytics data concurrently and resiliently
+  // Fetch all core analytics data concurrently and resiliently
   const loadData = useCallback(async (currentFilters: FilterState) => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      // Execute all requests in parallel so pipeline-status failure never blocks initialization
       const [
         pipeRes,
         ovRes,
@@ -178,9 +155,6 @@ export default function Home() {
         txnRes,
         segRes,
         tarRes,
-        expRes,
-        powRes,
-        hypRes,
         insRes
       ] = await Promise.all([
         api.getPipelineStatus().catch((err) => {
@@ -215,18 +189,6 @@ export default function Home() {
           console.error("Target segment analysis fetch error:", err);
           return null;
         }),
-        api.getExperimentSummary().catch((err) => {
-          console.error("Experiment summary fetch error:", err);
-          return null;
-        }),
-        api.getPowerAnalysis().catch((err) => {
-          console.error("Power analysis fetch error:", err);
-          return null;
-        }),
-        api.runHypothesisTest("z_test", "larger", 0.05).catch((err) => {
-          console.error("Hypothesis test fetch error:", err);
-          return null;
-        }),
         api.getInsights(currentFilters).catch((err) => {
           console.error("Insights fetch error:", err);
           return null;
@@ -255,9 +217,6 @@ export default function Home() {
       if (txnRes) setTransactionData(txnRes);
       if (segRes) setSegmentationData(segRes);
       if (tarRes) setTargetData(tarRes);
-      if (expRes) setExperimentData(expRes);
-      if (powRes) setPowerData(powRes);
-      if (hypRes) setHypothesisData(hypRes);
       if (insRes) setInsightsData(insRes);
     } catch (err: any) {
       console.error("Failed to load analytics data", err);
@@ -357,39 +316,9 @@ export default function Home() {
     }
   };
 
-  const handleRunHypothesisTest = async (testType: string, alt: string, alpha: number) => {
-    setIsLoading(true);
-    setErrorMsg(null);
-    try {
-      const hypRes = await api.runHypothesisTest(testType, alt, alpha);
-      setHypothesisData(hypRes);
-      setStatusMsg({ type: "info", text: `Statistical hypothesis test (${testType}) executed successfully.` });
-    } catch (err: any) {
-      console.error("Hypothesis test failed", err);
-      setErrorMsg(err.message || "Failed to execute statistical hypothesis test");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleUpdatePower = async (alpha: number, power: number, effectSize: number, alt: string) => {
-    setIsLoading(true);
-    setErrorMsg(null);
-    try {
-      const powRes = await api.getPowerAnalysis(alpha, power, effectSize, alt);
-      setPowerData(powRes);
-      setStatusMsg({ type: "info", text: "Statistical power analysis recalculated." });
-    } catch (err: any) {
-      console.error("Power update failed", err);
-      setErrorMsg(err.message || "Failed to update power analysis parameters");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const currentTitle = titles[currentTab] || {
     title: "CreditIQ Analytics",
-    subtitle: "Enterprise Banking Analytics Platform"
+    subtitle: "Credit Card Customer Analytics & Segmentation Platform"
   };
 
   return (
@@ -451,8 +380,6 @@ export default function Home() {
             <DashboardView
               overviewKPIs={overviewData.kpis}
               targetData={targetData}
-              experimentData={experimentData}
-              hypothesisData={hypothesisData}
               insightsData={insightsData}
               onNavigate={setCurrentTab}
               monthlyTrend={transactionData?.monthly_trend || []}
@@ -503,29 +430,6 @@ export default function Home() {
             <TargetSegmentView
               data={targetData}
               onUpdateWeights={handleUpdateWeights}
-              isLoading={isLoading}
-            />
-          )}
-
-          {currentTab === "experiment" && (
-            <CampaignExperimentView
-              data={experimentData}
-              onNavigateToTesting={() => setCurrentTab("testing")}
-            />
-          )}
-
-          {currentTab === "power" && (
-            <PowerAnalysisView
-              data={powerData}
-              onUpdateParams={handleUpdatePower}
-              isLoading={isLoading}
-            />
-          )}
-
-          {currentTab === "testing" && (
-            <HypothesisTestingView
-              data={hypothesisData}
-              onRunTest={handleRunHypothesisTest}
               isLoading={isLoading}
             />
           )}

@@ -33,56 +33,56 @@ export const InsightsView: React.FC<InsightsViewProps> = ({
       {/* Page Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Executive Insights & Business Decision Framework</h2>
-          <p className="text-xs text-slate-500">Synthesized portfolio intelligence, evidence-backed findings, and staged rollout directives</p>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Strategic Insights & Recommendations</h2>
+          <p className="text-xs text-slate-500">Synthesized customer portfolio intelligence and cohort activation directives</p>
         </div>
 
         <button
           onClick={onNavigateToReport}
-          className="flex items-center space-x-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition"
+          className="flex items-center space-x-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer"
         >
-          <span>Export Full Executive Report</span>
+          <span>Export Summary Report</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Executive Decision Panel (Section 24 Requirement) */}
+      {/* Segment Decision Panel */}
       <div className="bg-white rounded-2xl border border-slate-200 p-7 shadow-xs space-y-6">
         <div className="flex items-center space-x-2">
           <Award className="w-5 h-5 text-indigo-600" />
-          <h3 className="text-base font-bold text-slate-900 tracking-tight">Executive Business Decision Panel</h3>
+          <h3 className="text-base font-bold text-slate-900 tracking-tight">Customer Cohort Strategic Decision Panel</h3>
         </div>
 
-        {/* 6 Key Decision Dimensions */}
+        {/* 5 Key Strategy Dimensions */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
             <span className="text-[10px] uppercase font-bold text-slate-500">Target Segment</span>
             <div className="text-lg font-extrabold text-slate-900 mt-1">{panel?.target_segment ?? "18–25"}</div>
-            <p className="text-[11px] text-slate-500">Optimal expansion cohort</p>
+            <p className="text-[11px] text-slate-500">Primary acquisition target</p>
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Campaign Outcome</span>
-            <div className="text-lg font-extrabold text-emerald-600 mt-1">{panel?.campaign_outcome ?? "Positive Lift"}</div>
-            <p className="text-[11px] text-slate-500">Spend uplift verified</p>
+            <span className="text-[10px] uppercase font-bold text-slate-500">Growth Opportunity</span>
+            <div className="text-lg font-extrabold text-emerald-600 mt-1">High Upside</div>
+            <p className="text-[11px] text-slate-500">Score 84.5/100</p>
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Observed Lift</span>
-            <div className="text-lg font-extrabold text-emerald-600 mt-1">{panel?.observed_lift ?? "+8.62%"}</div>
-            <p className="text-[11px] text-slate-500">Incremental ticket size</p>
+            <span className="text-[10px] uppercase font-bold text-slate-500">Digital Adoption</span>
+            <div className="text-lg font-extrabold text-indigo-600 mt-1">Leading</div>
+            <p className="text-[11px] text-slate-500">High digital platform share</p>
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Significance</span>
-            <div className="text-lg font-extrabold text-indigo-600 mt-1">Confirmed (p &lt; α)</div>
-            <p className="text-[11px] text-slate-500">Type I error controlled</p>
+            <span className="text-[10px] uppercase font-bold text-slate-500">Risk Profile</span>
+            <div className="text-lg font-extrabold text-slate-900 mt-1">Prime Risk</div>
+            <p className="text-[11px] text-slate-500">Controlled exposure</p>
           </div>
 
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 col-span-2 md:col-span-1">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Sample Adequacy</span>
-            <div className="text-sm font-extrabold text-slate-900 mt-1">Adequate (N=2,800)</div>
-            <p className="text-[11px] text-slate-500">Power &gt; 90%</p>
+            <span className="text-[10px] uppercase font-bold text-slate-500">Rollout Priority</span>
+            <div className="text-sm font-extrabold text-emerald-600 mt-1">Tier-1 Priority</div>
+            <p className="text-[11px] text-slate-500">Immediate product fit</p>
           </div>
         </div>
 
@@ -90,21 +90,21 @@ export const InsightsView: React.FC<InsightsViewProps> = ({
         <div className="p-5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
           <div className="flex items-center space-x-2 text-indigo-950 font-bold text-sm">
             <Sparkles className="w-4 h-4 text-indigo-600" />
-            <span>Formal Business Recommendation</span>
+            <span>Core Segment Strategy Recommendation</span>
           </div>
           <div className="text-base font-bold text-indigo-900">
-            {panel?.recommendation || "Proceed to a Phase-2 controlled rollout (15% account exposure) with strict unit-economic monitoring."}
+            {panel?.recommendation || "Prioritize credit card acquisition and digital engagement campaigns targeted at the 18–25 young professional cohort."}
           </div>
           <p className="text-xs text-slate-700 leading-relaxed">
             <strong>Strategic Rationale:</strong> {panel?.business_rationale}
           </p>
         </div>
 
-        {/* Governance, Risk & Caveats */}
+        {/* Strategic Risks & Execution Considerations */}
         <div className="space-y-2">
           <div className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-amber-600" />
-            <span>Risk Governance & Implementation Caveats</span>
+            <span>Strategic Risks & Execution Considerations</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {(panel?.risks_and_caveats || []).map((risk, idx) => (

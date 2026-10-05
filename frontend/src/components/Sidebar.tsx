@@ -9,9 +9,6 @@ import {
   CreditCard,
   Receipt,
   PieChart,
-  FlaskConical,
-  Gauge,
-  Scale,
   Lightbulb,
   TableProperties,
   FileSpreadsheet,
@@ -70,26 +67,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ]
     },
     {
-      title: "SEGMENTATION & STRATEGY",
+      title: "SEGMENTATION & TARGETING",
       items: [
-        { id: "segmentation", label: "Age Segmentation", icon: PieChart },
-        { id: "target", label: "Target Segment Engine", icon: Sparkles, highlight: true },
+        { id: "segmentation", label: "Customer Segmentation", icon: PieChart },
+        { id: "target", label: "Target Segment Analysis", icon: Sparkles, highlight: true },
       ]
     },
     {
-      title: "A/B TESTING & STATISTICS",
+      title: "STRATEGY & EXPORTS",
       items: [
-        { id: "experiment", label: "Campaign Experiment", icon: FlaskConical },
-        { id: "power", label: "Power & Sample Size", icon: Gauge },
-        { id: "testing", label: "Hypothesis Testing", icon: Scale },
-      ]
-    },
-    {
-      title: "DECISIONS & EXPORTS",
-      items: [
-        { id: "insights", label: "Insights & Decisions", icon: Lightbulb },
-        { id: "report", label: "Executive Report", icon: FileSpreadsheet },
-        { id: "settings", label: "Settings & Demo", icon: Settings },
+        { id: "insights", label: "Insights & Recommendations", icon: Lightbulb },
+        { id: "report", label: "Export & Report", icon: FileSpreadsheet },
+        { id: "settings", label: "Settings & Reset", icon: Settings },
       ]
     }
   ];
@@ -108,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               Analytics
             </span>
           </div>
-          <p className="text-xs text-slate-400">Enterprise Banking Intelligence</p>
+          <p className="text-xs text-slate-400">Customer Analytics & Segmentation</p>
         </div>
       </div>
 

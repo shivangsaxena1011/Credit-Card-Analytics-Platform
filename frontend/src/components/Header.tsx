@@ -39,9 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
     { key: "VALIDATED", label: "Validated" },
     { key: "CLEANED", label: "Cleaned" },
     { key: "ANALYZED", label: "Analyzed" },
-    { key: "SEGMENTED", label: "Segmented" },
-    { key: "EXPERIMENT_READY", label: "Exp Ready" },
-    { key: "TESTED", label: "Tested" }
+    { key: "SEGMENTED", label: "Segmented" }
   ];
 
   return (
