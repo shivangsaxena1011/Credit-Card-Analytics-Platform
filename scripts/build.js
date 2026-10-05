@@ -8,13 +8,21 @@ const frontendDir = path.join(__dirname, '..', 'frontend');
 const rootNextDir = path.join(__dirname, '..', '.next');
 const frontendNextDir = path.join(frontendDir, '.next');
 
-// 1. Install frontend dependencies
-console.log('Installing frontend dependencies...');
-execSync('npm install', { cwd: frontendDir, stdio: 'inherit' });
+// 1. Install frontend dependencies (including build devDependencies)
+console.log('Installing frontend dependencies (including dev/build dependencies)...');
+execSync('npm install --include=dev', {
+  cwd: frontendDir,
+  stdio: 'inherit',
+  env: { ...process.env, NODE_ENV: 'development' }
+});
 
 // 2. Build Next.js app in frontend directory
 console.log('Running Next.js production build...');
-execSync('npm run build', { cwd: frontendDir, stdio: 'inherit' });
+execSync('npm run build', {
+  cwd: frontendDir,
+  stdio: 'inherit',
+  env: { ...process.env, NODE_ENV: 'production' }
+});
 
 // 3. Mirror .next artifacts to root for root-level Vercel runner
 console.log('Mirroring .next directory to root...');
