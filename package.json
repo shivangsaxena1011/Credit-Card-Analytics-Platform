@@ -5,9 +5,14 @@
   "description": "CreditIQ Analytics - Credit Card Customer Analytics, Segmentation & A/B Testing Platform",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build",
+    "build": "node scripts/build.js",
     "start": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint"
+  },
+  "dependencies": {
+    "next": "16.3.8",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "keywords": [
     "banking",
