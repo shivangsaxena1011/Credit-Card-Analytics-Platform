@@ -34,7 +34,9 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
   const [activeTab, setActiveTab] = useState<"all" | "missing" | "duplicates" | "invalid" | "outliers" | "consistency">("all");
   const [showBeforeAfter, setShowBeforeAfter] = useState<boolean>(true);
 
-  const score = qualityData?.quality_score ?? 87.0;
+  const rawScore = qualityData?.quality_score ?? cleaningReport?.before_quality_score ?? 85.0;
+  const cleanedScore = cleaningReport?.after_quality_score ?? 100.0;
+  const currentScore = isCleaned ? cleanedScore : rawScore;
   const issues = qualityData?.issues_table || [];
 
   const filteredIssues = issues.filter((issue) => {
@@ -99,16 +101,16 @@ export const DataQualityView: React.FC<DataQualityViewProps> = ({
                 cy="50"
                 r="42"
                 fill="transparent"
-                stroke={isCleaned ? "#10b981" : score > 80 ? "#3b82f6" : "#f59e0b"}
+                stroke={isCleaned ? "#10b981" : currentScore > 80 ? "#3b82f6" : "#f59e0b"}
                 strokeWidth="10"
-                strokeDasharray={`${(isCleaned ? 99.8 : score) * 2.64} 264`}
+                strokeDasharray={`${currentScore * 2.64} 264`}
                 strokeLinecap="round"
                 className="transition-all duration-1000 ease-out"
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center">
               <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                {isCleaned ? "99.8" : score.toFixed(1)}%
+                {currentScore.toFixed(1)}%
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 {isCleaned ? "Cleaned Score" : "Raw Score"}

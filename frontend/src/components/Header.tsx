@@ -13,6 +13,7 @@ interface HeaderProps {
   onLoadDemo: () => void;
   onRefresh: () => void;
   isLoading: boolean;
+  engine?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,7 +24,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenFilters,
   onLoadDemo,
   onRefresh,
-  isLoading
+  isLoading,
+  engine = "typescript-standalone"
 }) => {
   // Count active non-default filters
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => {
@@ -80,6 +82,19 @@ export const Header: React.FC<HeaderProps> = ({
               </React.Fragment>
             );
           })}
+        </div>
+
+        {/* Engine Status Badge */}
+        <div
+          title={engine === "python-fastapi" ? "Authoritative Python FastAPI Analytics Engine connected" : "Next.js TypeScript Standalone Analytics Engine active"}
+          className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${
+            engine === "python-fastapi"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-indigo-50 text-indigo-800 border-indigo-200"
+          }`}
+        >
+          <span className={`w-2 h-2 rounded-full ${engine === "python-fastapi" ? "bg-emerald-500 animate-pulse" : "bg-indigo-500"}`} />
+          <span>{engine === "python-fastapi" ? "FastAPI Engine" : "Vercel Standalone Engine"}</span>
         </div>
 
         {/* Global Filters Trigger Button */}

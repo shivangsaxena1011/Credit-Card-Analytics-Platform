@@ -18,6 +18,7 @@ export const ExportReportView: React.FC = () => {
   const [reportData, setReportData] = useState<any>(null);
   const [printableHtml, setPrintableHtml] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchReport();
@@ -25,12 +26,14 @@ export const ExportReportView: React.FC = () => {
 
   const fetchReport = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const res = await api.exportReport();
       setReportData(res.report);
       setPrintableHtml(res.printable_html);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to generate report", err);
+      setError(err.message || "Failed to generate executive report");
     } finally {
       setIsLoading(false);
     }
@@ -120,6 +123,26 @@ export const ExportReportView: React.FC = () => {
           <div className="py-20 text-center text-slate-400">
             <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-indigo-600" />
             Compiling executive report across models...
+          </div>
+        ) : error ? (
+          <div className="py-16 text-center text-rose-500 font-sans">
+            <p className="font-bold text-sm mb-2">{error}</p>
+            <button
+              onClick={fetchReport}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs shadow-xs"
+            >
+              Retry Report Compilation
+            </button>
+          </div>
+        ) : !reportData ? (
+          <div className="py-16 text-center text-slate-400 font-sans">
+            <p className="font-semibold text-sm mb-2">No report data generated yet</p>
+            <button
+              onClick={fetchReport}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs shadow-xs"
+            >
+              Compile Report
+            </button>
           </div>
         ) : (
           <div className="space-y-8 text-slate-800 text-xs">

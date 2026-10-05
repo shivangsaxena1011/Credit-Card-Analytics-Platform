@@ -100,7 +100,7 @@ export const DataOverviewView: React.FC<DataOverviewViewProps> = ({
           </div>
           <div>
             <div className="text-xs text-slate-400">Quality Health Score</div>
-            <div className="text-lg font-bold text-white">{kpis?.quality_score ?? 87}%</div>
+            <div className="text-lg font-bold text-white">{kpis?.quality_score !== undefined ? `${kpis.quality_score.toFixed(1)}%` : "--"}</div>
           </div>
         </div>
 

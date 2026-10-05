@@ -27,6 +27,7 @@ interface SidebarProps {
   isCleaned: boolean;
   onApplyClean: () => void;
   isCleaning: boolean;
+  engine?: string;
 }
 
 interface NavItem {
@@ -47,7 +48,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setCurrentTab,
   isCleaned,
   onApplyClean,
-  isCleaning
+  isCleaning,
+  engine = "typescript-standalone"
 }) => {
   const navSections: NavSection[] = [
     {
@@ -177,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between bg-slate-950/40">
         <div>
           <p className="font-semibold text-slate-400">CreditIQ Engine</p>
-          <p>Local Runtime • Fast Python Engine</p>
+          <p>{engine === "python-fastapi" ? "Python FastAPI Engine" : "Vercel Standalone Engine"}</p>
         </div>
         <span className="px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] font-mono">
           v1.0.0

@@ -39,7 +39,7 @@ export function generateExecutiveReport(
       },
       data_quality_and_cleaning: {
         raw_quality_score: qualityData?.quality_score || 0,
-        cleaned_quality_score: cleaningReport?.after_quality_score || 99.8,
+        cleaned_quality_score: cleaningReport?.after_quality_score ?? 100.0,
         cleaning_actions: cleaningReport?.comparison_table || [],
         total_anomalies_resolved: (qualityData?.total_anomalies || 0) + (qualityData?.total_missing_values || 0)
       },

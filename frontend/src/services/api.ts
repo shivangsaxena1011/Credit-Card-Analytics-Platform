@@ -18,17 +18,29 @@ import {
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
+async function handleResponse<T = any>(res: Response, defaultError: string): Promise<T> {
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => null);
+    const msg = errJson?.error || `${defaultError} (${res.status})`;
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  const engineSource = res.headers.get("X-Engine-Source");
+  if (engineSource && typeof data === "object" && data !== null && !data.engine) {
+    data.engine = engineSource;
+  }
+  return data as T;
+}
+
 export const api = {
   async getHealth() {
     const res = await fetch(`${BASE_URL}/api/health`, { cache: "no-store" });
-    if (!res.ok) throw new Error("Backend health check failed");
-    return res.json();
+    return handleResponse(res, "Backend health check failed");
   },
 
-  async getPipelineStatus(): Promise<{ stages: PipelineStages; is_cleaned: boolean }> {
+  async getPipelineStatus(): Promise<{ stages: PipelineStages; is_cleaned: boolean; engine?: string }> {
     const res = await fetch(`${BASE_URL}/api/pipeline-status`, { cache: "no-store" });
-    if (!res.ok) throw new Error("Failed to fetch pipeline status");
-    return res.json();
+    return handleResponse(res, "Failed to fetch pipeline status");
   },
 
   async resetData(seed: number = 42) {
@@ -37,20 +49,17 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ seed })
     });
-    if (!res.ok) throw new Error("Failed to reset dataset");
-    return res.json();
+    return handleResponse(res, "Failed to reset dataset");
   },
 
   async cleanData(): Promise<CleaningReport> {
     const res = await fetch(`${BASE_URL}/api/clean`, { method: "POST" });
-    if (!res.ok) throw new Error("Failed to run cleaning pipeline");
-    return res.json();
+    return handleResponse(res, "Failed to run cleaning pipeline");
   },
 
   async getDataQuality(): Promise<DataQualityData> {
     const res = await fetch(`${BASE_URL}/api/data-quality`, { cache: "no-store" });
-    if (!res.ok) throw new Error("Failed to inspect data quality");
-    return res.json();
+    return handleResponse(res, "Failed to inspect data quality");
   },
 
   async getOverview(filters: FilterState): Promise<{
@@ -64,8 +73,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(filters)
     });
-    if (!res.ok) throw new Error("Failed to fetch overview analytics");
-    return res.json();
+    return handleResponse(res, "Failed to fetch overview analytics");
   },
 
   async getCustomerAnalytics(filters: FilterState): Promise<CustomerAnalyticsData> {
@@ -74,8 +82,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(filters)
     });
-    if (!res.ok) throw new Error("Failed to fetch customer analytics");
-    return res.json();
+    return handleResponse(res, "Failed to fetch customer analytics");
   },
 
   async getCreditAnalytics(filters: FilterState): Promise<CreditAnalyticsData> {
@@ -84,8 +91,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(filters)
     });
-    if (!res.ok) throw new Error("Failed to fetch credit analytics");
-    return res.json();
+    return handleResponse(res, "Failed to fetch credit analytics");
   },
 
   async getTransactionAnalytics(filters: FilterState): Promise<TransactionAnalyticsData> {
@@ -94,8 +100,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(filters)
     });
-    if (!res.ok) throw new Error("Failed to fetch transaction analytics");
-    return res.json();
+    return handleResponse(res, "Failed to fetch transaction analytics");
   },
 
   async getSegments(ageGroups?: AgeGroupConfig[], filters?: FilterState): Promise<SegmentationData> {
@@ -104,8 +109,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ age_groups: ageGroups, filters })
     });
-    if (!res.ok) throw new Error("Failed to fetch segmentation data");
-    return res.json();
+    return handleResponse(res, "Failed to fetch segmentation data");
   },
 
   async getTargetSegmentAnalysis(
@@ -118,8 +122,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ weights, age_groups: ageGroups, filters })
     });
-    if (!res.ok) throw new Error("Failed to fetch target segment analysis");
-    return res.json();
+    return handleResponse(res, "Failed to fetch target segment analysis");
   },
 
   async getExperimentSummary(
@@ -132,8 +135,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ control_label: controlLabel, test_label: testLabel, metric_name: metricName })
     });
-    if (!res.ok) throw new Error("Failed to fetch experiment summary");
-    return res.json();
+    return handleResponse(res, "Failed to fetch experiment summary");
   },
 
   async getPowerAnalysis(
@@ -147,8 +149,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ alpha, power, effect_size: effectSize, alternative })
     });
-    if (!res.ok) throw new Error("Failed to calculate power analysis");
-    return res.json();
+    return handleResponse(res, "Failed to calculate power analysis");
   },
 
   async runHypothesisTest(
@@ -169,8 +170,7 @@ export const api = {
         test_label: testLabel
       })
     });
-    if (!res.ok) throw new Error("Failed to execute hypothesis test");
-    return res.json();
+    return handleResponse(res, "Failed to execute hypothesis test");
   },
 
   async getInsights(filters: FilterState): Promise<InsightsData> {
@@ -179,16 +179,14 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(filters)
     });
-    if (!res.ok) throw new Error("Failed to generate automated insights");
-    return res.json();
+    return handleResponse(res, "Failed to generate automated insights");
   },
 
   async exportReport(): Promise<{ report: any; printable_html: string }> {
     const res = await fetch(`${BASE_URL}/api/export-report`, {
       method: "POST"
     });
-    if (!res.ok) throw new Error("Failed to generate report");
-    return res.json();
+    return handleResponse(res, "Failed to generate report");
   },
 
   async exploreData(
@@ -211,8 +209,7 @@ export const api = {
         sort_direction: sortDirection
       })
     });
-    if (!res.ok) throw new Error("Failed to query data explorer");
-    return res.json();
+    return handleResponse(res, "Failed to query data explorer");
   },
 
   getCsvExportUrl(tableName: string): string {

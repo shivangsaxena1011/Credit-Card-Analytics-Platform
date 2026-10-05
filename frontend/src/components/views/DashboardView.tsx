@@ -137,8 +137,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="font-mono text-indigo-300 font-bold">{hypothesisData?.statistics?.p_value_display || "< 0.0001"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Cleaned Data Quality</span>
-                <span className="font-bold text-emerald-400">99.8%</span>
+                <span className="text-slate-400">Data Quality Score</span>
+                <span className="font-bold text-emerald-400">
+                  {overviewKPIs?.quality_score !== undefined ? `${overviewKPIs.quality_score.toFixed(1)}%` : "100%"}
+                </span>
               </div>
             </div>
 
@@ -196,7 +198,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           { label: "Avg Ticket", value: `$${overviewKPIs?.avg_transaction_value?.toFixed(1) ?? "148.0"}`, icon: TrendingUp, color: "text-violet-600" },
           { label: "Avg Income", value: `$${overviewKPIs?.avg_annual_income ? Math.round(overviewKPIs.avg_annual_income / 1000) : "85"}k`, icon: DollarSign, color: "text-amber-600" },
           { label: "Avg Score", value: Math.round(overviewKPIs?.avg_credit_score ?? 688).toString(), icon: CreditCard, color: "text-cyan-600" },
-          { label: "Quality Score", value: `${overviewKPIs?.quality_score ?? 87}%`, icon: ShieldCheck, color: "text-teal-600" },
+          { label: "Quality Score", value: overviewKPIs?.quality_score !== undefined ? `${overviewKPIs.quality_score.toFixed(1)}%` : "--", icon: ShieldCheck, color: "text-teal-600" },
           { label: "Campaign Lift", value: `+${liftPct.toFixed(1)}%`, icon: Activity, color: "text-emerald-600" },
         ].map((kpi, idx) => {
           const Icon = kpi.icon;

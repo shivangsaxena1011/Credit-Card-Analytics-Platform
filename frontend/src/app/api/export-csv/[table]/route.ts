@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const BACKEND_BASE_URL = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+import { proxyCsvToBackend } from "@/lib/backendProxy";
+import { getDataStore } from "@/lib/analytics/dataStore";
 
 export async function GET(
   req: NextRequest,
@@ -8,20 +8,13 @@ export async function GET(
 ) {
   try {
     const { table } = await params;
-    const tbl = table.toLowerCase();
-
-    const response = await fetch(`${BACKEND_BASE_URL}/api/export-csv/${tbl}`);
-    if (!response.ok) {
-      return NextResponse.json({ error: `Backend error: ${response.statusText}` }, { status: response.status });
-    }
-
-    const csvData = await response.text();
-    return new NextResponse(csvData, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename=creditiq_${tbl}.csv`
+    return proxyCsvToBackend(table, () => {
+      const store = getDataStore();
+      const csv = store.toCsv(table);
+      if (!csv) {
+        throw new Error(`No data found for table: ${table}`);
       }
+      return csv;
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to download CSV" }, { status: 500 });

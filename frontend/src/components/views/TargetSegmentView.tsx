@@ -83,6 +83,14 @@ export const TargetSegmentView: React.FC<TargetSegmentViewProps> = ({
       </div>
 
       {/* Main Showcase: Recommended Segment Profile (Section 16 Requirement) */}
+      {!recommended && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-slate-600 text-xs shadow-xs">
+          <Sparkles className="w-6 h-6 mx-auto mb-2 text-indigo-600" />
+          <p className="font-bold text-slate-900 text-sm">Target Cohort Recommendation Model</p>
+          <p className="mt-1 text-slate-500">Adjust the dimension scoring weights below and click &quot;Re-Calculate Scores&quot; to evaluate cohorts.</p>
+        </div>
+      )}
+
       {recommended && (
         <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-indigo-950 text-white rounded-2xl p-7 border border-indigo-700/50 shadow-xl relative overflow-hidden">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
@@ -184,9 +192,10 @@ export const TargetSegmentView: React.FC<TargetSegmentViewProps> = ({
             <button
               onClick={handleApplyWeights}
               disabled={isLoading}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition"
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
             >
-              Re-Calculate Scores
+              {isLoading && <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+              <span>{isLoading ? "Calculating..." : "Re-Calculate Scores"}</span>
             </button>
           </div>
         </div>

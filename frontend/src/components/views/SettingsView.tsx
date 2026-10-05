@@ -20,6 +20,7 @@ interface SettingsViewProps {
   onApplyClean: () => void;
   isLoading: boolean;
   isCleaned: boolean;
+  engine?: string;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -27,7 +28,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onResetData,
   onApplyClean,
   isLoading,
-  isCleaned
+  isCleaned,
+  engine = "typescript-standalone"
 }) => {
   const [seed, setSeed] = useState<number>(42);
 
@@ -142,15 +144,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
       {/* System Technical Specifications */}
       <div className="bg-white rounded-2xl border border-slate-200 p-7 shadow-xs space-y-3">
-        <h3 className="text-sm font-bold text-slate-900">System Technical Stack & Environmental Health</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-900">System Technical Stack & Environmental Health</h3>
+          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${
+            engine === "python-fastapi"
+              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+              : "bg-indigo-50 text-indigo-800 border-indigo-200"
+          }`}>
+            {engine === "python-fastapi" ? "Active: Python FastAPI Engine" : "Active: Vercel Standalone Engine"}
+          </span>
+        </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
             <span className="text-slate-400 text-[10px] font-sans">Backend Runtime</span>
-            <div className="font-bold text-slate-900 mt-0.5">Python 3.14 + FastAPI</div>
+            <div className="font-bold text-slate-900 mt-0.5">
+              {engine === "python-fastapi" ? "Python 3.11+ / FastAPI" : "Next.js 16 Serverless"}
+            </div>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
             <span className="text-slate-400 text-[10px] font-sans">Statistical Engine</span>
-            <div className="font-bold text-slate-900 mt-0.5">SciPy 1.18 + Statsmodels</div>
+            <div className="font-bold text-slate-900 mt-0.5">
+              {engine === "python-fastapi" ? "SciPy + Statsmodels" : "TypeScript Analytics"}
+            </div>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
             <span className="text-slate-400 text-[10px] font-sans">Frontend Framework</span>

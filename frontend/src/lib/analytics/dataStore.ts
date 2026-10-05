@@ -195,9 +195,29 @@ export class DataStore {
     };
   }
 
-  public toCsv(tableName: "customers" | "credit_profiles" | "transactions" | "experiment", useRaw: boolean = false): string {
-    const data = this.getActiveData(useRaw);
-    const rows: any[] = data[tableName] || [];
+  public toCsv(tableName: string, useRaw: boolean = false): string {
+    const tbl = tableName.toLowerCase();
+    let rows: any[] = [];
+
+    if (tbl === "customers") {
+      rows = this.rawData.customers;
+    } else if (tbl === "cleaned_customers") {
+      rows = this.cleanedData.customers;
+    } else if (tbl === "credit_profiles") {
+      rows = this.rawData.credit_profiles;
+    } else if (tbl === "cleaned_credit") {
+      rows = this.cleanedData.credit_profiles;
+    } else if (tbl === "transactions") {
+      rows = this.rawData.transactions;
+    } else if (tbl === "cleaned_transactions") {
+      rows = this.cleanedData.transactions;
+    } else if (tbl === "experiment") {
+      rows = this.rawData.experiment;
+    } else {
+      const data = this.getActiveData(useRaw);
+      rows = (data as any)[tbl] || [];
+    }
+
     if (!rows.length) return "";
 
     const headers = Object.keys(rows[0]);

@@ -4,6 +4,7 @@
 
 import { Customer, CreditProfile, Transaction, ExperimentRecord } from "./dataGenerator";
 import { CleaningReport, CleaningComparisonItem } from "../../types/analytics";
+import { inspectDataQuality } from "./dataQuality";
 
 function median(nums: number[]): number {
   if (nums.length === 0) return 0;
@@ -183,6 +184,9 @@ export function runCleaningPipeline(
     { metric: "Extreme Transaction Outliers", before: beforeExtremeTxn, after: 0, status: "Resolved", method: `Capped at 99.5th percentile ($${p99_5.toLocaleString()})` }
   ];
 
+  const beforeQuality = inspectDataQuality(rawCustomers, rawCreditProfiles, rawTransactions);
+  const afterQuality = inspectDataQuality(customers, creditProfiles, transactions);
+
   return {
     cleaned: {
       customers,
@@ -192,8 +196,8 @@ export function runCleaningPipeline(
     },
     report: {
       pipeline_status: "Cleaned Successfully",
-      before_quality_score: 87.0,
-      after_quality_score: 99.8,
+      before_quality_score: beforeQuality.quality_score,
+      after_quality_score: afterQuality.quality_score,
       records_processed: {
         customers: customers.length,
         credit_profiles: creditProfiles.length,

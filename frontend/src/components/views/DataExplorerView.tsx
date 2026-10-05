@@ -22,6 +22,7 @@ export const DataExplorerView: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [dataPayload, setDataPayload] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   const tableTabs = [
     { id: "customers", label: "Raw Customers" },
@@ -35,6 +36,7 @@ export const DataExplorerView: React.FC = () => {
 
   const fetchData = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const res = await api.exploreData(
         selectedTable,
@@ -45,8 +47,9 @@ export const DataExplorerView: React.FC = () => {
         sortDirection
       );
       setDataPayload(res);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch table data", err);
+      setError(err.message || "Failed to query table data");
     } finally {
       setIsLoading(false);
     }
@@ -172,9 +175,21 @@ export const DataExplorerView: React.FC = () => {
                     Loading dataset records...
                   </td>
                 </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={columns.length || 1} className="py-12 text-center text-rose-500 font-sans">
+                    <p className="font-semibold mb-2">{error}</p>
+                    <button
+                      onClick={fetchData}
+                      className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold shadow-xs"
+                    >
+                      Retry Query
+                    </button>
+                  </td>
+                </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="py-12 text-center text-slate-400 font-sans">
+                  <td colSpan={columns.length || 1} className="py-12 text-center text-slate-400 font-sans">
                     No matching rows found in {selectedTable}
                   </td>
                 </tr>
