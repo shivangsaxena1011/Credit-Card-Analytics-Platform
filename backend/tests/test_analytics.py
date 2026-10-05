@@ -172,3 +172,156 @@ def test_experiment_percentage_lift():
     exp_res = analyze_experiment(df_exp)
     assert exp_res["comparison"]["percentage_lift"] == 10.0
     assert exp_res["comparison"]["absolute_difference"] == 10.0
+
+
+def test_dynamic_quality_score_calculation():
+    """Verify that post-cleaning quality score is dynamically derived and not hardcoded to 99.8."""
+    data = generate_synthetic_data(seed=777, n_customers=1000, n_transactions=10000)
+    cleaned, report = run_cleaning_pipeline(data)
+
+    before_score = report["before_quality_score"]
+    after_score = report["after_quality_score"]
+
+    # Quality score must improve after cleaning
+    assert after_score > before_score
+    # Dynamic score depends on remaining rows and deduplication, should not be hardcoded to 99.8
+    assert isinstance(after_score, float)
+    assert 90.0 <= after_score <= 100.0
+    assert "comparison_table" in report
+    assert len(report["comparison_table"]) >= 5
+
+
+def test_credit_utilization_consistency_check():
+    """Verify reported vs derived credit utilization and consistency flag."""
+    data = generate_synthetic_data(seed=42, n_customers=500, n_transactions=5000)
+    cleaned, _ = run_cleaning_pipeline(data)
+    c_credit = cleaned["credit_profiles"]
+
+    # Check both columns exist
+    assert "credit_utilisation" in c_credit.columns
+    assert "derived_utilisation" in c_credit.columns
+    assert "utilization_consistent" in c_credit.columns
+
+    # Derived utilization must be debt / limit (rounded to 4 decimal places)
+    expected_derived = (c_credit["outstanding_debt"] / c_credit["credit_limit"].replace(0, 1)).clip(0.0, 1.0)
+    np.testing.assert_allclose(c_credit["derived_utilisation"].values, expected_derived.values, atol=1e-3)
+
+    # Boolean consistency flag check
+    consistency_rate = float(c_credit["utilization_consistent"].mean())
+    assert 0.0 <= consistency_rate <= 1.0
+
+
+def test_imputation_edge_cases_and_graceful_fallbacks():
+    """Verify cleaning handles empty occupations, missing credit limits, and extreme values safely."""
+    # Construct a dataset where one occupation has only 1 row with NaN income
+    df_cust = pd.DataFrame({
+        "cust_id": ["C1", "C2", "C3"],
+        "name": ["Alice", "Bob", "Charlie"],
+        "gender": ["Female", "Male", "Female"],
+        "age": [10, 85, 30],  # out-of-range ages
+        "location": ["City", "Suburb", "Rural"],
+        "occupation": ["RareJob", "RareJob", "CommonJob"],
+        "annual_income": [np.nan, np.nan, 75000.0],
+        "marital_status": ["Single", "Married", "Single"]
+    })
+
+    df_credit = pd.DataFrame({
+        "cust_id": ["C1", "C2", "C3", "C3"],  # Duplicate C3
+        "credit_score": [np.nan, 700, 720, 720],
+        "credit_utilisation": [0.5, 0.4, 0.3, 0.3],
+        "outstanding_debt": [15000.0, 2000.0, 1000.0, 1000.0],
+        "credit_inquiries_last_6_months": [1, 0, 2, 2],
+        "credit_limit": [np.nan, 5000.0, 10000.0, 10000.0]
+    })
+
+    df_txn = pd.DataFrame({
+        "tran_id": ["T1", "T2", "T3"],
+        "cust_id": ["C1", "C2", "C3"],
+        "tran_date": ["2025-01-01", "2025-01-02", "2025-01-03"],
+        "tran_amount": [0.0, 150.0, -10.0],
+        "product_category": ["Dining", "Travel", "Retail"],
+        "platform": ["POS", "Online", "POS"],
+        "payment_type": ["Credit Card", "Debit Card", "Cash"]
+    })
+
+    df_exp = pd.DataFrame({
+        "experiment_id": ["EXP1", "EXP2"],
+        "customer_id": ["C1", "C2"],
+        "group": ["Control", "Test"],
+        "metric": ["ATV", "ATV"],
+        "metric_value": [100.0, 120.0],
+        "experiment_date": ["2025-09-01", "2025-09-01"],
+        "segment_name": ["18–25", "26–48"]
+    })
+
+    dirty_dict = {
+        "customers": df_cust,
+        "credit_profiles": df_credit,
+        "transactions": df_txn,
+        "experiment": df_exp
+    }
+
+    cleaned, report = run_cleaning_pipeline(dirty_dict)
+
+    # All NaNs must be resolved
+    assert cleaned["customers"]["annual_income"].isna().sum() == 0
+    assert cleaned["credit_profiles"]["credit_score"].isna().sum() == 0
+    assert cleaned["credit_profiles"]["credit_limit"].isna().sum() == 0
+    # Duplicates removed
+    assert len(cleaned["credit_profiles"]) == 3
+    # Invalid ages clamped
+    assert cleaned["customers"]["age"].min() >= 18
+    assert cleaned["customers"]["age"].max() <= 75
+    # Non-positive transactions imputed with positive median
+    assert len(cleaned["transactions"]) == 3
+    assert (cleaned["transactions"]["tran_amount"] > 0).all()
+
+
+def test_robustness_analysis_mann_whitney_and_bootstrap():
+    """Verify Mann-Whitney U test and Bootstrap Confidence Interval execution."""
+    rng = np.random.default_rng(101)
+    # Right-skewed log-normal distributions
+    ctrl = rng.lognormal(mean=4.0, sigma=0.8, size=500)
+    test = rng.lognormal(mean=4.2, sigma=0.8, size=500)
+
+    res = run_hypothesis_test(ctrl, test, test_type="z_test", alternative="larger", alpha=0.05)
+
+    assert "robustness_analysis" in res
+    robust = res["robustness_analysis"]
+
+    # Mann-Whitney U validation
+    mw = robust["mann_whitney_u"]
+    assert "u_statistic" in mw
+    assert "p_value" in mw
+    assert mw["p_value"] < 0.05
+
+    # Bootstrap CI validation
+    bs = robust["bootstrap_ci"]
+    assert "ci_lower" in bs
+    assert "ci_upper" in bs
+    assert bs["ci_lower"] < bs["ci_upper"]
+    assert bs["n_resamples"] == 1000
+
+    # Decision concurrence
+    assert "concurrence" in robust
+    assert robust["concurrence"] in [True, False]
+
+
+def test_data_loader_caching_and_customer_linking():
+    """Verify data store MD5 filter caching and cross-entity ID consistency."""
+    from backend.analytics.data_loader import get_data_store
+    store = get_data_store()
+
+    # Filter by specific age
+    filter1 = {"age_min": 25, "age_max": 35}
+    res1 = store.filter_data(filter1)
+
+    # Result should be cached
+    res2 = store.filter_data(filter1)
+    assert len(res1["customers"]) == len(res2["customers"])
+
+    # Ensure transaction customer IDs match filtered customer IDs
+    valid_custs = set(res1["customers"]["cust_id"])
+    txn_custs = set(res1["transactions"]["cust_id"])
+    assert txn_custs.issubset(valid_custs)
+

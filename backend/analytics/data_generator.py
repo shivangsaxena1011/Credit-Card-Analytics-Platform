@@ -2,12 +2,13 @@
 CreditIQ Analytics - Synthetic Data Generator
 Generates realistic customer, credit profile, transaction, and experiment datasets
 with controlled data-quality issues as specified in requirements.
+Logically connects customer IDs across customers, credit profiles, transactions, and experiment cohorts.
 """
 
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import Tuple, Dict, Any, Optional
+from typing import Dict, Any, List
 
 FIRST_NAMES_MALE = [
     "Aarav", "Vihaan", "Aditya", "Rohan", "Kabir", "Arjun", "Rahul", "Dev", "Vikram",
@@ -57,7 +58,8 @@ PAYMENT_TYPES = ["Credit Card", "Debit Card", "UPI", "PhonePe", "Cash", "Net Ban
 
 def generate_synthetic_data(seed: int = 42, n_customers: int = 1000, n_transactions: int = 65000) -> Dict[str, pd.DataFrame]:
     """
-    Generates all primary datasets with realistic correlations and controlled dirty data.
+    Generates all primary datasets with realistic correlations, controlled dirty data,
+    and logically connected customer identifiers.
     """
     rng = np.random.default_rng(seed)
 
@@ -73,63 +75,68 @@ def generate_synthetic_data(seed: int = 42, n_customers: int = 1000, n_transacti
         last = rng.choice(LAST_NAMES)
         names.append(f"{first} {last}")
 
-    # Realistic age distribution (bimodal around 28 and 45)
+    # Realistic age distribution (bimodal around 24 and 42)
     ages = []
     for _ in range(n_customers):
-        if rng.random() < 0.35:
-            # Young adult
-            age = int(rng.normal(24, 3.5))
-            age = max(18, min(age, 32))
-        elif rng.random() < 0.70:
-            # Mid career
-            age = int(rng.normal(38, 6.0))
-            age = max(26, min(age, 52))
+        r = rng.random()
+        if r < 0.35:
+            # Young adult (18-25 cohort focus)
+            age = int(rng.normal(23, 2.5))
+            age = max(18, min(age, 25))
+        elif r < 0.75:
+            # Mid career (26-48 cohort)
+            age = int(rng.normal(37, 6.0))
+            age = max(26, min(age, 48))
         else:
-            # Older demographic
+            # Older demographic (49-65+)
             age = int(rng.normal(56, 5.0))
-            age = max(45, min(age, 75))
+            age = max(49, min(age, 75))
         ages.append(age)
     ages = np.array(ages)
 
     locations = rng.choice(LOCATIONS, size=n_customers, p=LOCATION_WEIGHTS)
     occupations = rng.choice(OCCUPATIONS, size=n_customers, p=OCCUPATION_WEIGHTS)
 
-    # Realistic income based on occupation + age effect
+    # Realistic income based on occupation + age experience premium
     annual_incomes = []
     for occ, age in zip(occupations, ages):
         mean, std, min_val, max_val = OCCUPATION_INCOME_PARAMS[occ]
-        # Age experience bonus: peak between 35-55
-        experience_mult = 0.75 + 0.35 * (1 - abs(age - 45) / 35)
-        experience_mult = max(0.65, min(1.35, experience_mult))
-        raw_inc = rng.normal(mean * experience_mult, std)
-        clipped_inc = max(min_val, min(max_val * 1.2, raw_inc))
-        annual_incomes.append(round(clipped_inc, -2))
+        age_factor = 1.0 + (age - 25) * 0.015 if age > 25 else 0.85
+        inc = rng.normal(mean * age_factor, std)
+        inc = max(min_val, min(inc, max_val * 1.3))
+        annual_incomes.append(round(inc, 2))
     annual_incomes = np.array(annual_incomes, dtype=object)
 
-    marital_status = []
+    # Marital status correlated with age
+    marital_statuses = []
     for age in ages:
-        p_married = 0.15 if age < 26 else (0.65 if age < 45 else 0.82)
-        marital_status.append("Married" if rng.random() < p_married else "Single")
-    marital_status = np.array(marital_status, dtype=object)
+        if age < 26:
+            p_single = 0.82
+        elif age < 35:
+            p_single = 0.45
+        else:
+            p_single = 0.22
+        marital_statuses.append("Single" if rng.random() < p_single else "Married")
+    marital_statuses = np.array(marital_statuses, dtype=object)
 
     # ------------------------------------------
     # Introduce controlled dirty data in CUSTOMERS
     # ------------------------------------------
-    # 1. Unrealistic ages (1, 2, 110, 120, etc.)
-    dirty_age_indices = rng.choice(n_customers, size=10, replace=False)
-    dirty_ages = [1, 2, 2, 110, 115, 120, 122, -4, 0, 118]
-    for idx, d_age in zip(dirty_age_indices, dirty_ages):
-        ages[idx] = d_age
+    # 1. Missing annual income (~4.8%, ~48 records)
+    missing_inc_idx = rng.choice(n_customers, size=int(n_customers * 0.048), replace=False)
+    for idx in missing_inc_idx:
+        annual_incomes[idx] = None
 
-    # 2. Missing annual income (~48 records, ~4.8%)
-    missing_inc_indices = rng.choice(n_customers, size=48, replace=False)
-    for idx in missing_inc_indices:
-        annual_incomes[idx] = np.nan
+    # 2. Out-of-range ages (1, 2, 110, 120, etc. ~1.0%, ~10 records)
+    invalid_age_idx = rng.choice(n_customers, size=10, replace=False)
+    invalid_age_values = [1, 2, 3, 110, 115, 120, 122, 125, 4, 118]
+    for idx, inv_val in zip(invalid_age_idx, invalid_age_values):
+        ages[idx] = inv_val
 
-    # 3. Missing categorical fields (marital_status, location)
-    missing_marital_indices = rng.choice(n_customers, size=8, replace=False)
-    for idx in missing_marital_indices:
-        marital_status[idx] = None
+    # 3. Missing marital status (~0.8%, ~8 records)
+    missing_mar_idx = rng.choice(n_customers, size=8, replace=False)
+    for idx in missing_mar_idx:
+        marital_statuses[idx] = None
 
     df_customers = pd.DataFrame({
         "cust_id": cust_ids,
@@ -139,7 +146,7 @@ def generate_synthetic_data(seed: int = 42, n_customers: int = 1000, n_transacti
         "location": locations,
         "occupation": occupations,
         "annual_income": annual_incomes,
-        "marital_status": marital_status
+        "marital_status": marital_statuses
     })
 
     # ==========================================
@@ -149,137 +156,132 @@ def generate_synthetic_data(seed: int = 42, n_customers: int = 1000, n_transacti
     credit_limits = []
     credit_utilisations = []
     outstanding_debts = []
-    inquiries_list = []
+    credit_inquiries = []
 
     for i in range(n_customers):
-        age = ages[i]
-        # Valid age approximation for credit modeling
-        eff_age = 35 if (age < 15 or age > 85) else age
-        inc = annual_incomes[i]
-        eff_inc = 75000 if (pd.isna(inc) or inc is None) else float(inc)
+        age = df_customers.loc[i, "age"]
+        raw_inc = df_customers.loc[i, "annual_income"]
+        inc = float(raw_inc) if raw_inc is not None else 65000.0
 
-        # Younger people have slightly lower credit scores and limits
-        base_score = 640 if eff_age < 26 else (695 if eff_age < 49 else 725)
-        score = int(rng.normal(base_score, 55))
-        score = max(320, min(850, score))
+        # Credit score: correlated with income & age (FICO range 300 - 850)
+        base_score = 560 + (inc / 2400.0) + (age * 1.5) + rng.normal(0, 35)
+        score = int(np.clip(base_score, 350, 850))
         credit_scores.append(score)
 
-        # Credit limit strongly correlated with income and score
-        score_factor = (score - 300) / 550
-        limit = int((eff_inc * 0.28) * score_factor + rng.normal(3000, 1200))
-        limit = max(1500, min(45000, round(limit, -2)))
+        # Credit limit: heavily correlated with score & income
+        limit_ratio = (score - 400) / 450.0  # 0 to 1
+        base_limit = (inc * 0.22) * (0.4 + 1.2 * limit_ratio) + rng.normal(0, 1500)
+        limit = max(1500.0, min(base_limit, 60000.0))
+        limit = round(limit, -2)  # round to nearest 100
         credit_limits.append(limit)
 
-        # Utilization inversely related to score, higher for younger
-        base_util = 0.48 if eff_age < 26 else 0.32
-        util = max(0.02, min(0.96, rng.normal(base_util, 0.18)))
+        # Credit utilisation: higher for lower incomes / younger ages
+        util_base = 0.45 - (score - 600) * 0.0008 + rng.normal(0, 0.12)
+        util = float(np.clip(util_base, 0.02, 0.95))
         credit_utilisations.append(round(util, 4))
 
-        # Outstanding debt = limit * util + noise
+        # Outstanding debt = limit * utilisation
         debt = round(limit * util, 2)
         outstanding_debts.append(debt)
 
-        # Inquiries
-        inquiries = int(rng.poisson(1.4 if eff_age < 30 else 0.8))
-        inquiries = min(6, inquiries)
-        inquiries_list.append(inquiries)
+        # Inquiries: 0 to 6
+        inq = int(rng.choice([0, 1, 2, 3, 4, 5], p=[0.45, 0.28, 0.15, 0.07, 0.03, 0.02]))
+        credit_inquiries.append(inq)
 
     credit_scores = np.array(credit_scores, dtype=object)
     credit_limits = np.array(credit_limits, dtype=object)
     credit_utilisations = np.array(credit_utilisations, dtype=object)
     outstanding_debts = np.array(outstanding_debts, dtype=object)
-    inquiries_list = np.array(inquiries_list, dtype=object)
+    credit_inquiries = np.array(credit_inquiries, dtype=object)
 
     # ------------------------------------------
     # Introduce controlled dirty data in CREDIT PROFILES
     # ------------------------------------------
-    # 1. Missing credit limits (~28 records)
-    missing_limit_idx = rng.choice(n_customers, size=28, replace=False)
+    # 1. Missing credit limits (~2.8%, ~28 rows)
+    missing_limit_idx = rng.choice(n_customers, size=int(n_customers * 0.028), replace=False)
     for idx in missing_limit_idx:
-        credit_limits[idx] = np.nan
+        credit_limits[idx] = None
 
-    # 2. Outstanding debt exceeds credit limit (business rule violation, ~22 records)
-    violation_idx = rng.choice(
-        [i for i in range(n_customers) if i not in missing_limit_idx],
-        size=22,
-        replace=False
-    )
-    for idx in violation_idx:
-        outstanding_debts[idx] = round(float(credit_limits[idx]) * rng.uniform(1.15, 1.65), 2)
+    # 2. Outstanding debt greater than credit limit (~2.2%, ~22 rows)
+    debt_viol_idx = rng.choice(n_customers, size=int(n_customers * 0.022), replace=False)
+    for idx in debt_viol_idx:
+        if credit_limits[idx] is not None:
+            outstanding_debts[idx] = round(credit_limits[idx] * rng.uniform(1.08, 1.45), 2)
 
-    # 3. Missing numeric values (inquiries or utilisation, ~15 records)
-    missing_num_idx = rng.choice(n_customers, size=15, replace=False)
-    for idx in missing_num_idx[:8]:
-        credit_utilisations[idx] = np.nan
-    for idx in missing_num_idx[8:]:
-        inquiries_list[idx] = np.nan
+    # 3. Missing utilization (~0.7%, ~7 rows)
+    missing_util_idx = rng.choice(n_customers, size=7, replace=False)
+    for idx in missing_util_idx:
+        credit_utilisations[idx] = None
+
+    # 4. Missing inquiries (~0.5%, ~5 rows)
+    missing_inq_idx = rng.choice(n_customers, size=5, replace=False)
+    for idx in missing_inq_idx:
+        credit_inquiries[idx] = None
 
     df_credit = pd.DataFrame({
         "cust_id": cust_ids,
         "credit_score": credit_scores,
         "credit_utilisation": credit_utilisations,
         "outstanding_debt": outstanding_debts,
-        "credit_inquiries_last_6_months": inquiries_list,
+        "credit_inquiries_last_6_months": credit_inquiries,
         "credit_limit": credit_limits
     })
 
-    # 4. Duplicate customer IDs in credit profile (~6 duplicate rows)
-    dup_cust_indices = rng.choice(n_customers, size=6, replace=False)
-    dup_rows = df_credit.iloc[dup_cust_indices].copy()
-    # slightly modify or repeat
-    for _, row in dup_rows.iterrows():
-        if pd.notna(row["credit_limit"]):
-            row["credit_limit"] = round(float(row["credit_limit"]) * 1.05, -2)
+    # 5. Duplicate customer IDs in credit profile (6 intentional duplicates)
+    dup_cust_idx = rng.choice(n_customers, size=6, replace=False)
+    dup_rows = df_credit.iloc[dup_cust_idx].copy()
+    # Modify limit slightly in duplicate so deduplication rule has an explicit tie-break
+    dup_rows["credit_limit"] = dup_rows["credit_limit"].apply(lambda v: v * 0.9 if v is not None else 5000.0)
     df_credit = pd.concat([df_credit, dup_rows], ignore_index=True)
 
     # ==========================================
-    # 3. TRANSACTIONS DATASET (65,000 records)
+    # 3. TRANSACTIONS DATASET (~65,000 records)
     # ==========================================
-    # Map cust_id to customer age & profile for realistic transactional patterns
-    cust_age_map = dict(zip(df_customers["cust_id"], ages))
-    
+    tran_ids = [f"TXN{i+1:07d}" for i in range(n_transactions)]
     tran_cust_ids = rng.choice(cust_ids, size=n_transactions)
-    tran_ids = [f"TXN{i+1:06d}" for i in range(n_transactions)]
 
+    # Date range: past 12 months (e.g. 2025-01-01 to 2025-12-31)
     start_date = datetime(2025, 1, 1)
-    # Generate dates across 365 days
-    day_offsets = rng.integers(0, 365, size=n_transactions)
-    tran_dates = [
-        (start_date + timedelta(days=int(d), hours=int(rng.integers(0, 24)))).strftime("%Y-%m-%d %H:%M:%S")
-        for d in day_offsets
-    ]
+    date_offsets = rng.integers(0, 365, size=n_transactions)
+    tran_dates = [(start_date + timedelta(days=int(d))).strftime("%Y-%m-%d") for d in date_offsets]
 
     platforms = rng.choice(PLATFORMS, size=n_transactions, p=PLATFORM_WEIGHTS).astype(object)
-    
-    # Category and Payment Type conditioned on Age
+
+    # Customer map for segment-specific transaction simulation
+    cust_age_map = dict(zip(df_customers["cust_id"], df_customers["age"]))
+    cust_inc_map = dict(zip(df_customers["cust_id"], df_customers["annual_income"]))
+
     categories = []
     payment_types = []
     tran_amounts = []
 
-    for cid in tran_cust_ids:
-        c_age = cust_age_map.get(cid, 35)
-        is_young = (18 <= c_age <= 25)
+    for c_id in tran_cust_ids:
+        c_age = cust_age_map.get(c_id, 32)
+        c_inc_raw = cust_inc_map.get(c_id, 65000)
+        c_inc = float(c_inc_raw) if c_inc_raw is not None else 65000.0
 
-        # Young customers prefer Electronics, Fashion, Beauty, Entertainment
-        if is_young:
-            cat_weights = [0.26, 0.24, 0.18, 0.08, 0.06, 0.06, 0.05, 0.07]
-            # Lower credit card share for young (card usage gap!): UPI/PhonePe preferred
-            pay_weights = [0.24, 0.18, 0.32, 0.16, 0.06, 0.04]
-            # Log-normal transaction amount (mean ~$145)
-            amt = rng.lognormal(mean=4.75, sigma=0.68)
-        elif c_age < 49:
-            cat_weights = [0.18, 0.16, 0.11, 0.12, 0.15, 0.14, 0.09, 0.05]
-            pay_weights = [0.46, 0.16, 0.18, 0.08, 0.04, 0.08]
-            amt = rng.lognormal(mean=5.10, sigma=0.72)
+        # Segment-specific Category distribution
+        if c_age <= 25:
+            cat_weights = [0.28, 0.24, 0.16, 0.08, 0.05, 0.05, 0.06, 0.08]
+            pay_weights = [0.28, 0.22, 0.26, 0.16, 0.03, 0.05]
+            mean_spend = 125.0 + (c_inc / 1800.0)
+            std_spend = 65.0
+        elif c_age <= 48:
+            cat_weights = [0.22, 0.18, 0.12, 0.10, 0.14, 0.10, 0.08, 0.06]
+            pay_weights = [0.46, 0.18, 0.16, 0.08, 0.02, 0.10]
+            mean_spend = 160.0 + (c_inc / 1400.0)
+            std_spend = 85.0
         else:
-            cat_weights = [0.12, 0.12, 0.08, 0.09, 0.22, 0.22, 0.10, 0.05]
-            pay_weights = [0.52, 0.14, 0.10, 0.04, 0.08, 0.12]
-            amt = rng.lognormal(mean=5.05, sigma=0.65)
+            cat_weights = [0.14, 0.12, 0.08, 0.07, 0.20, 0.22, 0.09, 0.08]
+            pay_weights = [0.52, 0.22, 0.08, 0.04, 0.04, 0.10]
+            mean_spend = 145.0 + (c_inc / 1500.0)
+            std_spend = 75.0
 
         cat = rng.choice(PRODUCT_CATEGORIES, p=cat_weights)
+        amt = rng.normal(mean_spend, std_spend)
         pay = rng.choice(PAYMENT_TYPES, p=pay_weights)
 
-        # Category-based adjustment
+        # Category-based ticket scaling
         if cat == "Electronics":
             amt *= 1.45
         elif cat == "Travel":
@@ -311,7 +313,7 @@ def generate_synthetic_data(seed: int = 42, n_customers: int = 1000, n_transacti
     for idx in zero_amt_idx:
         tran_amounts[idx] = 0.0
 
-    # 3. Extreme transaction values (outliers, e.g. 7 records between $38,000 and $85,000)
+    # 3. Extreme transaction values (7 intentional anomalies between $39,500 and $84,000)
     extreme_idx = rng.choice(n_transactions, size=7, replace=False)
     extreme_values = [42500.0, 58000.0, 72000.0, 39500.0, 84000.0, 65000.0, 49000.0]
     for idx, ext_val in zip(extreme_idx, extreme_values):
@@ -337,11 +339,12 @@ def generate_synthetic_data(seed: int = 42, n_customers: int = 1000, n_transacti
     })
 
     # ==========================================
-    # 4. EXPERIMENT DATASET (A/B Test)
+    # 4. REDESIGNED EXPERIMENT DATASET (A/B Test)
     # ==========================================
-    # Campaign targeting 18-25 segment with a Credit Card Rewards & Cashback promotion
+    # Connects directly to customer IDs and segments!
+    # Target segment: 18-25 cohort targeted for rewards campaign
     # Control: Standard card offering
-    # Test: Enhanced rewards on Electronics, Fashion & Beauty + 5% cashback
+    # Test: Enhanced rewards (Electronics/Fashion 5% cashback)
     n_exp_per_group = 1400
     exp_dates = []
     exp_start = datetime(2025, 9, 1)
@@ -349,6 +352,24 @@ def generate_synthetic_data(seed: int = 42, n_customers: int = 1000, n_transacti
     for i in range(n_exp_per_group * 2):
         d = exp_start + timedelta(days=int(i % 30), hours=int(rng.integers(8, 22)))
         exp_dates.append(d.strftime("%Y-%m-%d"))
+
+    # Randomly assign customers to experiment
+    # Over-index on target cohort (18-25) while including cross-segment customers for filtering
+    young_custs = df_customers[df_customers["age"] <= 25]["cust_id"].tolist()
+    other_custs = df_customers[df_customers["age"] > 25]["cust_id"].tolist()
+
+    if not young_custs:
+        young_custs = cust_ids[:300]
+    if not other_custs:
+        other_custs = cust_ids[300:]
+
+    # Sample customer IDs with replacement for the 2,800 experiment transactions
+    exp_assigned_custs = []
+    for _ in range(n_exp_per_group * 2):
+        if rng.random() < 0.70:
+            exp_assigned_custs.append(rng.choice(young_custs))
+        else:
+            exp_assigned_custs.append(rng.choice(other_custs))
 
     # Control group values: Mean ~$146.20, std ~$38.50
     control_vals = rng.normal(loc=146.20, scale=38.50, size=n_exp_per_group)
@@ -358,18 +379,29 @@ def generate_synthetic_data(seed: int = 42, n_customers: int = 1000, n_transacti
     test_vals = rng.normal(loc=158.80, scale=39.20, size=n_exp_per_group)
     test_vals = np.clip(test_vals, 18.0, 480.0)
 
-    # Combine into experiment dataset
     exp_groups = ["Control"] * n_exp_per_group + ["Test"] * n_exp_per_group
     exp_metric_vals = np.concatenate([control_vals, test_vals])
-    
-    # Shuffle in matching date order
-    exp_cust_ids = [f"EXP_CUST_{i+1:04d}" for i in range(len(exp_groups))]
+
+    # Build customer attributes into experiment records for relational integrity
+    exp_ids = [f"EXP2025_{i+1:05d}" for i in range(len(exp_groups))]
+    exp_segments = []
+    for c_id in exp_assigned_custs:
+        age_val = cust_age_map.get(c_id, 24)
+        if age_val <= 25:
+            exp_segments.append("18–25")
+        elif age_val <= 48:
+            exp_segments.append("26–48")
+        else:
+            exp_segments.append("49–65+")
 
     df_experiment = pd.DataFrame({
-        "experiment_date": exp_dates,
+        "experiment_id": exp_ids,
+        "customer_id": exp_assigned_custs,
         "group": exp_groups,
-        "customer_id": exp_cust_ids,
-        "metric_value": np.round(exp_metric_vals, 2)
+        "metric": ["average_transaction_value"] * len(exp_groups),
+        "metric_value": np.round(exp_metric_vals, 2),
+        "experiment_date": exp_dates,
+        "segment_name": exp_segments
     })
 
     return {

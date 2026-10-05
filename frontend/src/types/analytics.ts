@@ -315,6 +315,32 @@ export interface HypothesisTestData {
     reject_h0: boolean;
     decision_text: string;
     badge_color: string;
+    practical_significance?: string;
+    is_practically_significant?: boolean;
+  };
+  robustness_analysis?: {
+    concurrence?: boolean;
+    mann_whitney_u?: {
+      test_name: string;
+      statistic: number;
+      u_statistic?: number;
+      p_value: number;
+      p_value_display: string;
+      reject_h0: boolean;
+      agrees_with_primary: boolean;
+    };
+    bootstrap?: {
+      test_name: string;
+      mean_diff: number;
+      lower_bound: number | string;
+      upper_bound: number | string;
+      bootstrap_p_value: number;
+    };
+    bootstrap_ci?: {
+      ci_lower: number;
+      ci_upper: number;
+      n_resamples: number;
+    };
   };
   interpretations: {
     statistical: string;
@@ -347,7 +373,44 @@ export interface DecisionPanelData {
   risks_and_caveats: string[];
 }
 
+export interface StatisticalReliability {
+  sample_size_adequacy?: {
+    status: string;
+    control_n: number;
+    test_n: number;
+    minimum_target: number;
+    is_valid: boolean;
+  };
+  variance_homogeneity?: {
+    variance_ratio: number;
+    assessment: string;
+    test_recommendation: string;
+  };
+  robustness_summary?: {
+    primary_test: string;
+    mann_whitney_u: string;
+    bootstrap_ci: string;
+    concurrence: string;
+  };
+  practical_significance?: {
+    hurdle_rate_pct: number;
+    observed_lift_pct: number;
+    clears_hurdle: boolean;
+    verdict: string;
+  };
+  warnings?: string[];
+}
+
+export interface AuditSummary {
+  raw_records_audited?: number;
+  cleaned_records?: number;
+  data_quality_score?: number;
+  cleaning_pipeline_status?: string;
+}
+
 export interface InsightsData {
   insights: InsightItem[];
   decision_panel: DecisionPanelData;
+  statistical_reliability?: StatisticalReliability;
+  audit_summary?: AuditSummary;
 }

@@ -1,10 +1,5 @@
-import { NextResponse } from "next/server";
-import { getDataStore } from "@/lib/analytics/dataStore";
+import { proxyToBackend } from "@/lib/backendProxy";
 
 export async function GET() {
-  const store = getDataStore();
-  return NextResponse.json({
-    stages: store.pipelineStages,
-    is_cleaned: store.isCleaned
-  });
+  return proxyToBackend("/api/pipeline-status", "GET");
 }

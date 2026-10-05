@@ -1,7 +1,7 @@
 """
 CreditIQ Analytics - Data Quality Engine
-Analyzes raw datasets for missing values, duplicates, invalid ranges,
-outliers, and consistency violations. Computes a dynamic Data Quality Score (0-100%).
+Analyzes raw and cleaned datasets for missing values, duplicates, invalid ranges,
+outliers, and consistency violations. Computes a dynamic, defensible Data Quality Score (0-100%).
 """
 
 import numpy as np
@@ -11,16 +11,17 @@ from typing import Dict, Any, List
 
 def inspect_data_quality(raw_data: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
     """
-    Evaluates quality across raw customer, credit, and transaction datasets.
+    Evaluates quality across customer, credit, and transaction datasets.
     Returns detailed metrics, an issue table, and an overall Data Quality Score.
+    Operates seamlessly on both raw and cleaned data representations.
     """
     df_cust = raw_data["customers"]
     df_credit = raw_data["credit_profiles"]
     df_txn = raw_data["transactions"]
 
-    n_cust = len(df_cust)
-    n_credit = len(df_credit)
-    n_txn = len(df_txn)
+    n_cust = max(1, len(df_cust))
+    n_credit = max(1, len(df_credit))
+    n_txn = max(1, len(df_txn))
 
     issues: List[Dict[str, Any]] = []
 
@@ -80,7 +81,7 @@ def inspect_data_quality(raw_data: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
             "affected_records": missing_util,
             "percentage": round((missing_util / n_credit) * 100, 2),
             "severity": "Low",
-            "recommended_treatment": "Impute with overall median utilization"
+            "recommended_treatment": "Impute with derived utilization (debt/limit) or median"
         })
     if missing_inq > 0:
         issues.append({
@@ -151,7 +152,8 @@ def inspect_data_quality(raw_data: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
     # 3. INVALID VALUES
     # ----------------------------------------------------
     # Age < 15 or > 80
-    valid_age_mask = (df_cust["age"] >= 15) & (df_cust["age"] <= 80)
+    cust_age_num = pd.to_numeric(df_cust["age"], errors="coerce")
+    valid_age_mask = (cust_age_num >= 15) & (cust_age_num <= 80)
     invalid_age_count = int((~valid_age_mask).sum())
     invalid_age_pct = round((invalid_age_count / n_cust) * 100, 2)
     if invalid_age_count > 0:
@@ -165,18 +167,19 @@ def inspect_data_quality(raw_data: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
             "recommended_treatment": "Replace invalid values (<15 or >80) with occupation-wise median age"
         })
 
-    # Zero transaction amounts
-    zero_txn_count = int((pd.to_numeric(df_txn["tran_amount"], errors="coerce") == 0).sum())
+    # Zero or negative transaction amounts
+    txn_amt_num = pd.to_numeric(df_txn["tran_amount"], errors="coerce").fillna(0.0)
+    zero_txn_count = int((txn_amt_num <= 0).sum())
     zero_txn_pct = round((zero_txn_count / n_txn) * 100, 2)
     if zero_txn_count > 0:
         issues.append({
             "table": "transactions",
             "column": "tran_amount",
-            "issue_type": "Invalid Value (Zero Amount)",
+            "issue_type": "Invalid Value (Zero/Negative Amount)",
             "affected_records": zero_txn_count,
             "percentage": zero_txn_pct,
             "severity": "Medium",
-            "recommended_treatment": "Impute with category-specific median transaction value"
+            "recommended_treatment": "Impute with context-aware category-specific median"
         })
 
     # ----------------------------------------------------
@@ -202,8 +205,8 @@ def inspect_data_quality(raw_data: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
     # 5. OUTLIERS (IQR Analysis)
     # ----------------------------------------------------
     numeric_amounts = pd.to_numeric(df_txn["tran_amount"], errors="coerce").dropna()
-    q1 = numeric_amounts.quantile(0.25)
-    q3 = numeric_amounts.quantile(0.75)
+    q1 = float(numeric_amounts.quantile(0.25)) if not numeric_amounts.empty else 40.0
+    q3 = float(numeric_amounts.quantile(0.75)) if not numeric_amounts.empty else 160.0
     iqr = q3 - q1
     extreme_thresh = q3 + 5.0 * iqr  # True extreme outliers
     extreme_count = int((numeric_amounts > extreme_thresh).sum())
@@ -220,16 +223,11 @@ def inspect_data_quality(raw_data: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
         })
 
     # ----------------------------------------------------
-    # DATA QUALITY SCORE CALCULATION
+    # DYNAMIC DATA QUALITY SCORE CALCULATION
     # ----------------------------------------------------
-    # Weights for penalty:
-    # Missing values: up to 5 points
-    # Duplicates: up to 3 points
-    # Invalid ranges: up to 3 points
-    # Debt violations: up to 3 points
-    # Zero / extreme transactions: up to 3 points
+    # Score ranges from 50.0 to 100.0, strictly computed from remaining defects
     penalties = 0.0
-    penalties += min(5.0, (missing_inc / n_cust) * 40 + (missing_limit / n_credit) * 30)
+    penalties += min(5.0, (missing_inc / n_cust) * 40 + (missing_limit / n_credit) * 30 + (missing_plat / n_txn) * 20)
     penalties += min(3.0, (dup_cust_credit / n_credit) * 80)
     penalties += min(3.0, (invalid_age_count / n_cust) * 60)
     penalties += min(3.0, (debt_viol_count / n_credit) * 50)

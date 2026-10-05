@@ -6,6 +6,7 @@ customer segmentation, statistical A/B testing, and reporting.
 
 import io
 import math
+import os
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, List, Optional
@@ -33,10 +34,31 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for Next.js frontend
+# Robust CORS configuration: allows local dev, FRONTEND_URL, and Vercel domains
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
+frontend_url = os.environ.get("FRONTEND_URL")
+if frontend_url:
+    cleaned_url = frontend_url.strip()
+    if cleaned_url and cleaned_url not in allowed_origins:
+        allowed_origins.append(cleaned_url)
+        allowed_origins.append(cleaned_url.rstrip("/"))
+
+extra_origins = os.environ.get("ALLOWED_ORIGINS")
+if extra_origins:
+    for o in extra_origins.split(","):
+        cleaned_extra = o.strip()
+        if cleaned_extra and cleaned_extra not in allowed_origins:
+            allowed_origins.append(cleaned_extra)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -95,30 +117,34 @@ class ExperimentRequest(BaseModel):
     control_label: Optional[str] = "Control"
     test_label: Optional[str] = "Test"
     metric_name: Optional[str] = "Average Transaction Value"
+    segment: Optional[str] = None
+    filters: Optional[FilterRequest] = None
 
 
 class PowerAnalysisRequest(BaseModel):
-    alpha: Optional[float] = 0.05
-    power: Optional[float] = 0.80
-    effect_size: Optional[float] = 0.20
-    alternative: Optional[str] = "larger"
+    alpha: Optional[float] = Field(0.05, gt=0.0, lt=1.0)
+    power: Optional[float] = Field(0.80, gt=0.0, lt=1.0)
+    effect_size: Optional[float] = Field(0.20, gt=0.0)
+    alternative: Optional[str] = Field("larger", pattern="^(larger|smaller|two-sided)$")
 
 
 class HypothesisTestRequest(BaseModel):
-    test_type: Optional[str] = "z_test"  # "z_test" or "t_test"
-    alternative: Optional[str] = "larger"  # "larger", "two-sided", "smaller"
-    alpha: Optional[float] = 0.05
+    test_type: Optional[str] = Field("z_test", pattern="^(z_test|t_test)$")
+    alternative: Optional[str] = Field("larger", pattern="^(larger|smaller|two-sided)$")
+    alpha: Optional[float] = Field(0.05, gt=0.0, lt=1.0)
     control_label: Optional[str] = "Control"
     test_label: Optional[str] = "Test"
+    segment: Optional[str] = None
+    filters: Optional[FilterRequest] = None
 
 
 class DataExplorerRequest(BaseModel):
-    table_name: str = "customers"  # customers, credit_profiles, transactions, cleaned_customers, cleaned_credit, cleaned_transactions, experiment
-    page: int = 1
-    page_size: int = 25
+    table_name: str = "customers"
+    page: int = Field(1, ge=1)
+    page_size: int = Field(25, ge=5, le=200)
     search_term: Optional[str] = ""
     sort_by: Optional[str] = None
-    sort_direction: Optional[str] = "asc"
+    sort_direction: Optional[str] = Field("asc", pattern="^(asc|desc|ASC|DESC)$")
 
 
 # ==========================================
@@ -317,29 +343,37 @@ def get_target_segment_analysis(req: TargetScoringRequest):
 
 @app.post("/api/experiment-summary")
 def get_experiment_summary(req: ExperimentRequest):
-    base_data = store.get_active_data()
+    filters_dict = req.filters.model_dump() if req.filters else {}
+    data = store.filter_data(filters_dict)
     return analyze_experiment(
-        base_data["experiment"],
+        data["experiment"],
         control_label=req.control_label or "Control",
         test_label=req.test_label or "Test",
-        metric_name=req.metric_name or "Average Transaction Value"
+        metric_name=req.metric_name or "Average Transaction Value",
+        segment_filter=req.segment
     )
 
 
 @app.post("/api/power-analysis")
 def get_power_analysis(req: PowerAnalysisRequest):
     return calculate_power_and_sample_size(
-        alpha=req.alpha or 0.05,
-        power=req.power or 0.80,
-        effect_size=req.effect_size or 0.20,
+        alpha=req.alpha if req.alpha is not None else 0.05,
+        power=req.power if req.power is not None else 0.80,
+        effect_size=req.effect_size if req.effect_size is not None else 0.20,
         alternative=req.alternative or "larger"
     )
 
 
 @app.post("/api/hypothesis-test")
 def get_hypothesis_test(req: HypothesisTestRequest):
-    base_data = store.get_active_data()
-    df_exp = base_data["experiment"]
+    filters_dict = req.filters.model_dump() if req.filters else {}
+    data = store.filter_data(filters_dict)
+    df_exp = data["experiment"]
+
+    if req.segment and req.segment != "All" and "segment_name" in df_exp.columns:
+        seg_exp = df_exp[df_exp["segment_name"] == req.segment]
+        if not seg_exp.empty:
+            df_exp = seg_exp
 
     ctrl_label = req.control_label or "Control"
     test_label = req.test_label or "Test"
@@ -355,7 +389,7 @@ def get_hypothesis_test(req: HypothesisTestRequest):
         test_vals=test_vals,
         test_type=req.test_type or "z_test",
         alternative=req.alternative or "larger",
-        alpha=req.alpha or 0.05
+        alpha=req.alpha if req.alpha is not None else 0.05
     )
 
 

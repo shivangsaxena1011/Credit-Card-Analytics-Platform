@@ -1,12 +1,9 @@
-import { NextResponse } from "next/server";
+import { proxyToBackend } from "@/lib/backendProxy";
 import { getDataStore } from "@/lib/analytics/dataStore";
 
 export async function POST() {
-  try {
+  return proxyToBackend("/api/clean", "POST", undefined, async () => {
     const store = getDataStore();
-    const report = store.applyCleaning();
-    return NextResponse.json(report);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to run cleaning pipeline" }, { status: 500 });
-  }
+    return store.applyCleaning();
+  });
 }

@@ -10,34 +10,14 @@ It answers the core banking business question:
 
 ## 1. System Architecture & Tech Stack
 
-CreditIQ Analytics features a **Dual-Engine Architecture**:
-1. **Next.js Serverless Engine (Vercel Native)**: Complete analytical algorithms implemented in TypeScript inside Next.js App Router API routes (`/api/...`) enabling 100% serverless, zero-maintenance deployment on Vercel.
-2. **Python FastAPI Engine (Local/Enterprise)**: Full data science engine with Pandas, NumPy, SciPy, and Statsmodels for local verification and automated pytest test suites.
-
-```
-                   ┌──────────────────────────────────────────────┐
-                   │               Next.js Frontend               │
-                   │  React 19 • TypeScript • Tailwind v4 • Recharts│
-                   │         Interactive Dashboards & Controls     │
-                   └──────────────────────┬───────────────────────┘
-                                          │
-                   ┌──────────────────────┴───────────────────────┐
-                   │               Dual-Engine API                │
-                   │  Next.js App Router (Vercel Serverless)     │
-                   │  OR FastAPI (Python 3.14 + SciPy + Pandas)   │
-                   └──────────────────────┬───────────────────────┘
-                                          │
-                   ┌──────────────────────┴───────────────────────┐
-                   │         In-Memory Store & Life-Cycle         │
-                   │  Synthetic Data Generator (Controlled Dirty) │
-                   │  Deterministic Pipeline (Before/After Audit) │
-                   └──────────────────────────────────────────────┘
-```
+CreditIQ Analytics employs an **Authoritative Single-Source-of-Truth Architecture**:
+1. **Python FastAPI Analytics Engine (Authoritative Source)**: Authoritative calculation engine powered by Pandas, NumPy, SciPy, and Statsmodels. Governs all data generation, dynamic quality auditing, deterministic preprocessing, segmentation, multi-criteria target ranking, exact power sizing, hypothesis testing (Z-test, Welch t-test), non-parametric validation (Mann-Whitney U), and Monte Carlo percentile bootstrap confidence intervals.
+2. **Next.js Frontend & Transparent Route Proxies**: Next.js 16 App Router interface communicating directly with the authoritative analytics engine via transparent serverless route proxies, ensuring 100% data and calculation consistency across all screens.
 
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Lucide Icons, Recharts.
-- **Backend Analytics Engine**: Python 3.14, FastAPI, Pandas, NumPy, SciPy, Statsmodels.
-- **TypeScript Analytics Engine**: 1:1 mathematical parity with SciPy and Statsmodels (exact Student's t distributions, normal inverse CDF, Welch's t-test, two-sample Z-test, MCDA scoring).
-- **Deployment**: 100% Vercel-ready with zero external database dependencies.
+- **Backend Analytics Engine**: Python 3.11+, FastAPI, Pandas, NumPy, SciPy, Statsmodels.
+- **Statistical Parity & Robustness**: Standard Z-test, Welch's t-test, Mann-Whitney U rank-sum test, 1,000-resample percentile bootstrap, Cohen's d effect size, exact non-central t power calculations.
+- **Deployment**: Next.js on Vercel + FastAPI on Render (1-click Blueprint via `render.yaml`).
 
 ---
 
@@ -126,50 +106,45 @@ Credit Card Analysis/
 
 ---
 
-## 3. How to Deploy on Vercel
+## 3. How to Deploy to Production
 
-The application is pre-configured to deploy seamlessly to Vercel without requiring an external backend or database.
+### Deploying Frontend to Vercel
+1. Connect your repository `https://github.com/shivangsaxena1011/Credit-Card-Analytics-Platform` on [Vercel](https://vercel.com).
+2. Set **Root Directory** to `frontend` (or leave default since root `vercel.json` points build to `frontend`).
+3. Add Environment Variable:
+   - `BACKEND_URL`: URL of your deployed FastAPI backend (e.g. `https://creditiq-analytics-api.onrender.com`).
+4. Click **Deploy**.
 
-### Option A: 1-Click Import from GitHub
-1. Log in to [Vercel](https://vercel.com).
-2. Click **Add New...** > **Project**.
-3. Import the repository: `https://github.com/shivangsaxena1011/Credit-Card-Analytics-Platform`.
-4. Vercel automatically detects Next.js via the root `vercel.json` and `package.json`.
-5. Click **Deploy**.
-
-*(Optional: If importing without root `vercel.json`, simply set **Root Directory** to `frontend` in Project Settings).*
+### Deploying Backend to Render
+1. In [Render](https://render.com), click **New +** -> **Blueprint**.
+2. Select your repository. Render automatically reads `render.yaml`.
+3. Set Environment Variable:
+   - `FRONTEND_URL`: Your Vercel domain (e.g. `https://credit-card-analytics-platform.vercel.app`).
+4. Click **Apply Blueprint**.
 
 ---
 
 ## 4. How to Run Locally
 
-### Option 1: Standalone Next.js Serverless (No Python Required)
+1. **Start the FastAPI Backend**:
+```bash
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+```
+API Swagger documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+2. **Start the Next.js Frontend**:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser. All analytics, cleaning, segmentation, A/B testing, and exports run immediately in Next.js!
+Open [http://localhost:3000](http://localhost:3000) in your browser. All route handlers transparently forward to the authoritative FastAPI backend.
 
-### Option 2: Full Dual-Stack (Next.js + Python FastAPI Backend)
-1. **Start the FastAPI backend**:
-```bash
-python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
-```
-API documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
-
-2. **Start the Frontend with backend proxy**:
-```bash
-cd frontend
-npm install
-NEXT_PUBLIC_API_URL=http://127.0.0.1:8000 npm run dev
-```
-
-3. **Run Statistical Test Suite**:
+3. **Run Backend Statistical Test Suite**:
 ```bash
 python -m pytest backend/tests/test_analytics.py -v
 ```
-All 8 statistical and pipeline tests will assert against exact SciPy / Statsmodels formulas.
+All 13 statistical, dynamic quality scoring, robustness (Mann-Whitney U & Bootstrap), and imputation tests will assert against exact SciPy / Statsmodels formulas.
 
 ---
 
