@@ -4,19 +4,27 @@
   "private": true,
   "description": "CreditIQ Analytics - Credit Card Customer Analytics, Segmentation & A/B Testing Platform",
   "scripts": {
-    "dev": "npm --prefix frontend run dev",
-    "build": "node scripts/build.js",
-    "start": "npm --prefix frontend run start",
-    "lint": "npm --prefix frontend run lint"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "lucide-react": "^1.52.0",
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "recharts": "^3.10.1",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8"
   },
   "keywords": [
     "banking",

@@ -7,7 +7,6 @@ out/
 frontend/out/
 build/
 dist/
-/public/
 .vercel/
 **/.vercel/
 

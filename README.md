@@ -10,16 +10,16 @@ It answers the core banking business question:
 
 ## 1. System Architecture & Tech Stack
 
-CreditIQ Analytics employs a unified **Single-Project Vercel Services Architecture**:
+CreditIQ Analytics employs a unified **Single-Project Vercel Serverless Architecture**:
 1. **Python FastAPI Analytics Engine (Authoritative Source of Truth)**: Authoritative calculation engine powered by Pandas, NumPy, SciPy, and Statsmodels. Governs all data generation, dynamic quality auditing, deterministic preprocessing, customer profiling, credit risk analysis, transaction analytics, cohort segmentation, multi-criteria target ranking, automated insights, and executive reports.
-2. **Next.js Frontend & Route Proxies**: Next.js 16 App Router interface communicating with the authoritative analytics engine through Vercel internal service bindings and edge rewrites, ensuring 100% calculation consistency and sub-second UI responsiveness.
-3. **Unified Single-Project Vercel Deployment**: Frontend and backend are collocated in the same GitHub repository and deploy together in one Vercel project using Vercel Services (`vercel.json`), completely eliminating the need for external backend hosts like Render.
+2. **Next.js Frontend & Edge Rewrites**: Next.js 16 App Router interface communicating with the authoritative analytics engine through Vercel edge rewrites, ensuring 100% calculation consistency and sub-second UI responsiveness.
+3. **Unified Single-Project Vercel Deployment**: Frontend and backend are collocated in the same GitHub repository and deploy together in one Vercel project via `@vercel/python` serverless functions and `vercel.json` rewrites, completely eliminating the need for external backend hosts like Render.
 
 ### Technology Stack
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Lucide Icons, Recharts.
-- **Backend Analytics Engine**: Python 3.11+, FastAPI, Pandas, NumPy, SciPy, Statsmodels.
+- **Backend Analytics Engine**: Python 3.12, FastAPI, Pandas, NumPy, SciPy, Statsmodels.
 - **Data Lifecycle**: Fully in-memory, deterministic pseudo-random seed generation, relational consistency checks, and dynamic data cleaning.
-- **Deployment**: Single Vercel Project via Vercel Services (`vercel.json`).
+- **Deployment**: Single Vercel Project via Serverless Functions (`api/index.py`) and Next.js at root.
 
 ---
 
@@ -27,6 +27,8 @@ CreditIQ Analytics employs a unified **Single-Project Vercel Services Architectu
 
 ```
 Credit Card Analysis/
+├── api/
+│   └── index.py                 # Vercel Serverless Function entry point for FastAPI
 ├── backend/
 │   ├── analytics/
 │   │   ├── credit_analysis.py       # Credit score, limits, debt, Pearson correlation matrix
@@ -45,56 +47,39 @@ Credit Card Analysis/
 │   └── requirements.txt             # Backend Python dependencies
 ├── docs/
 │   └── ANALYTICS_METHODOLOGY.md     # Detailed statistical & data preprocessing methodology
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── api/                 # Next.js App Router API route handlers
-│   │   │   │   ├── clean/
-│   │   │   │   ├── credit/
-│   │   │   │   ├── customers/
-│   │   │   │   ├── data-explorer/
-│   │   │   │   ├── data-quality/
-│   │   │   │   ├── export-csv/[table]/
-│   │   │   │   ├── export-report/
-│   │   │   │   ├── health/
-│   │   │   │   ├── insights/
-│   │   │   │   ├── overview/
-│   │   │   │   ├── pipeline-status/
-│   │   │   │   ├── reset-data/
-│   │   │   │   ├── segments/
-│   │   │   │   ├── target-segment-analysis/
-│   │   │   │   └── transactions/
-│   │   │   ├── globals.css          # Tailwind CSS v4 banking theme
-│   │   │   ├── layout.tsx           # Typography & layout wrapper
-│   │   │   └── page.tsx             # Main client page, state management, and tab router
-│   │   ├── components/
-│   │   │   ├── Header.tsx           # Pipeline badges, filter trigger, load demo dataset
-│   │   │   ├── Sidebar.tsx          # Domain navigation sections & dataset health indicator
-│   │   │   ├── GlobalFilterModal.tsx# Comprehensive multi-field filter modal
-│   │   │   └── views/
-│   │   │       ├── DashboardView.tsx          # Executive overview & visual workflow pipeline
-│   │   │       ├── DataOverviewView.tsx       # Top KPIs & multi-domain distributions
-│   │   │       ├── DataQualityView.tsx        # Dynamic quality score & Before/After audit table
-│   │   │       ├── CustomerAnalyticsView.tsx  # Demographics, income by occupation, scatter
-│   │   │       ├── CreditAnalyticsView.tsx    # Credit score, utilization, Pearson matrix
-│   │   │       ├── TransactionAnalyticsView.tsx# Spend trend, category x payment cross-tabs
-│   │   │       ├── SegmentationView.tsx       # Configurable age groups & 11-dimension table
-│   │   │       ├── TargetSegmentView.tsx      # Weight tuning sliders & dynamic narrative
-│   │   │       ├── InsightsView.tsx           # Automated findings & executive decision panel
-│   │   │       ├── DataExplorerView.tsx       # Row inspection, search, sorting, pagination
-│   │   │       ├── ExportReportView.tsx       # Full report preview, PDF print, CSV downloads
-│   │   │       └── SettingsView.tsx           # Seed configuration & dataset reset
-│   │   ├── lib/
-│   │   │   └── backendProxy.ts      # Vercel service binding & internal proxy resolver
-│   │   ├── services/
-│   │   │   └── api.ts               # Universal client API service
-│   │   └── types/
-│   │       └── analytics.ts         # TypeScript interfaces across all data models
-│   ├── package.json
-│   └── tsconfig.json
-├── package.json                     # Root monorepo scripts
-├── requirements.txt                 # Root Python requirements for Vercel
-├── vercel.json                      # Single-project Vercel Services configuration
+├── public/                          # Static assets and icons
+├── src/
+│   ├── app/
+│   │   ├── globals.css              # Tailwind CSS v4 banking theme
+│   │   ├── layout.tsx               # Typography & layout wrapper
+│   │   └── page.tsx                 # Main client page, state management, and tab router
+│   ├── components/
+│   │   ├── Header.tsx               # Pipeline badges, filter trigger, load demo dataset
+│   │   ├── Sidebar.tsx              # Domain navigation sections & dataset health indicator
+│   │   ├── GlobalFilterModal.tsx    # Comprehensive multi-field filter modal
+│   │   └── views/
+│   │       ├── DashboardView.tsx          # Executive overview & visual workflow pipeline
+│   │       ├── DataOverviewView.tsx       # Top KPIs & multi-domain distributions
+│   │       ├── DataQualityView.tsx        # Dynamic quality score & Before/After audit table
+│   │       ├── CustomerAnalyticsView.tsx  # Demographics, income by occupation, scatter
+│   │       ├── CreditAnalyticsView.tsx    # Credit score, utilization, Pearson matrix
+│   │       ├── TransactionAnalyticsView.tsx# Spend trend, category x payment cross-tabs
+│   │       ├── SegmentationView.tsx       # Configurable age groups & 11-dimension table
+│   │       ├── TargetSegmentView.tsx      # Weight tuning sliders & dynamic narrative
+│   │       ├── InsightsView.tsx           # Automated findings & executive decision panel
+│   │       ├── DataExplorerView.tsx       # Row inspection, search, sorting, pagination
+│   │       ├── ExportReportView.tsx       # Full report preview, PDF print, CSV downloads
+│   │       └── SettingsView.tsx           # Seed configuration & dataset reset
+│   ├── services/
+│   │   └── api.ts                   # Universal client API service
+│   └── types/
+│       └── analytics.ts             # TypeScript interfaces across all data models
+├── .python-version                  # Python runtime version for Vercel (3.12)
+├── next.config.ts                   # Next.js configuration with development proxy rewrites
+├── package.json                     # Root Next.js package.json and build scripts
+├── requirements.txt                 # Root Python requirements for Vercel Serverless Function
+├── tsconfig.json                    # TypeScript configuration
+├── vercel.json                      # Vercel rewrites configuration routing /api/* to FastAPI
 └── README.md
 ```
 
@@ -106,12 +91,10 @@ Deploying CreditIQ Analytics requires **only one Vercel deployment** with zero e
 
 1. Import the repository `https://github.com/shivangsaxena1011/Credit-Card-Analytics-Platform` on [Vercel](https://vercel.com).
 2. Leave the **Root Directory** as `./` (the root of the repository).
-3. Vercel automatically detects the `vercel.json` configuration:
-   - The `frontend` service builds the Next.js application from `frontend/`.
-   - The `backend` service runs the FastAPI analytics engine from `backend/main.py`.
-   - Vercel injects the internal `BACKEND_URL` service binding directly into the frontend.
-   - Public requests to `/api/*` are seamlessly routed to the FastAPI backend.
-4. Click **Deploy**.
+3. Vercel automatically detects Next.js at root and builds it with `next build`.
+4. Vercel automatically detects `api/index.py` and deploys it as a Python Serverless Function using `requirements.txt`.
+5. `vercel.json` rewrites all `/api/*` traffic directly to the FastAPI serverless function.
+6. Click **Deploy**.
 
 No Render account, separate server, or manual environment variable configuration is required!
 
@@ -127,11 +110,10 @@ API Swagger documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/do
 
 ### 2. Start the Next.js Frontend:
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser. In local development, the Next.js proxy forwards requests directly to `http://127.0.0.1:8000`.
+Open [http://localhost:3000](http://localhost:3000) in your browser. Next.js automatically rewrites `/api/*` requests to `http://127.0.0.1:8000/api/*`.
 
 ### 3. Run Backend Test Suite:
 ```bash
