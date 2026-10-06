@@ -80,7 +80,7 @@ export const DataExplorerView: React.FC = () => {
   const totalPages = dataPayload?.total_pages ?? 1;
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 max-w-7xl mx-auto">
       {/* Header & CSV Export */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>

@@ -34,7 +34,7 @@ export const TransactionAnalyticsView: React.FC<TransactionAnalyticsViewProps> =
   const topCategories = data?.top_categories || [];
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 max-w-7xl mx-auto">
       {/* Page Title */}
       <div className="pb-2 border-b border-slate-200">
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">Transaction Volume & Merchant Dynamics</h2>

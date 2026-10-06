@@ -75,7 +75,7 @@ export const TargetSegmentView: React.FC<TargetSegmentViewProps> = ({
   const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 max-w-7xl mx-auto">
       {/* Page Title */}
       <div className="pb-2 border-b border-slate-200">
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">Target Segment Recommendation Engine</h2>

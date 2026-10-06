@@ -19,6 +19,7 @@ import { ExportReportView } from "../components/views/ExportReportView";
 import { CardIntelligenceView } from "../components/views/CardIntelligenceView";
 
 import { api } from "../services/api";
+import { useDeviceDetection } from "../hooks/useDeviceDetection";
 import {
   FilterState,
   OverviewKPIs,
@@ -54,7 +55,9 @@ const DEFAULT_STAGES: PipelineStages = {
 };
 
 export default function Home() {
+  const deviceInfo = useDeviceDetection();
   const [currentTab, setCurrentTab] = useState<string>("dashboard");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -313,17 +316,20 @@ export default function Home() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-slate-50 font-sans antialiased text-slate-900">
-      {/* Left Navigation Sidebar */}
+      {/* Navigation Sidebar (Desktop persistent + Mobile slide-over drawer) */}
       <Sidebar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
         isCleaned={isCleaned}
         onApplyClean={handleApplyClean}
         isCleaning={isCleaning}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        deviceType={deviceInfo.deviceType}
       />
 
       {/* Main Workspace Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden w-full min-w-0">
         {/* Top Header */}
         <Header
           pageTitle={currentTitle.title}
@@ -332,6 +338,8 @@ export default function Home() {
           onOpenFilters={() => setIsFilterModalOpen(true)}
           onRefresh={() => loadData(filters)}
           isLoading={isLoading}
+          onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
+          deviceType={deviceInfo.deviceType}
         />
 
         {/* Status Confirmation Banner if any */}

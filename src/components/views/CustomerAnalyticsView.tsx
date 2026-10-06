@@ -37,7 +37,7 @@ export const CustomerAnalyticsView: React.FC<CustomerAnalyticsViewProps> = ({ da
   const summary = data?.summary;
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 max-w-7xl mx-auto">
       {/* Page Title */}
       <div className="pb-2 border-b border-slate-200">
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">Customer Demographics & Income Profiling</h2>

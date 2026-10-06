@@ -119,7 +119,7 @@ export const CardIntelligenceView: React.FC = () => {
   }, [binInput]);
 
   return (
-    <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 lg:space-y-8 max-w-7xl mx-auto">
       {/* 1. Customer-Only Strict Privacy & Security Banner */}
       <div className="bg-gradient-to-r from-emerald-950 via-slate-900 to-indigo-950 border border-emerald-500/30 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -284,7 +284,7 @@ export const CardIntelligenceView: React.FC = () => {
               </div>
 
               {/* Masked Card Number */}
-              <div className="font-mono text-lg md:text-xl font-bold tracking-widest text-slate-100 drop-shadow-md">
+              <div className="font-mono text-base sm:text-lg md:text-xl font-bold tracking-wider sm:tracking-widest text-slate-100 drop-shadow-md">
                 {maskedCardNumber}
               </div>
             </div>
