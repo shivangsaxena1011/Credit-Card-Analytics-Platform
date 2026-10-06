@@ -18,7 +18,10 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 async function handleResponse<T = any>(res: Response, defaultError: string): Promise<T> {
   if (!res.ok) {
     const errJson = await res.json().catch(() => null);
-    const msg = errJson?.error || `${defaultError} (${res.status})`;
+    const msg =
+      errJson?.error ||
+      (typeof errJson?.detail === "string" ? errJson.detail : null) ||
+      `${defaultError} (${res.status})`;
     throw new Error(msg);
   }
   const data = await res.json();
