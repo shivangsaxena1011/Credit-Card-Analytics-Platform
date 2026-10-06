@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   FileSpreadsheet,
   Printer,
@@ -15,11 +15,7 @@ export const ExportReportView: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchReport();
-  }, []);
-
-  const fetchReport = async () => {
+  const fetchReport = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -28,11 +24,15 @@ export const ExportReportView: React.FC = () => {
       setPrintableHtml(res.printable_html);
     } catch (err: any) {
       console.error("Failed to generate report", err);
-      setError(err.message || "Failed to generate customer segmentation report");
+      setError(err?.message || "Failed to generate customer segmentation report");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
 
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
