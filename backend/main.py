@@ -7,29 +7,52 @@ data cleaning, cohort segmentation, and portfolio reporting.
 import io
 import math
 import os
+import sys
+from pathlib import Path
+from typing import Dict, Any, List, Optional
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, List, Optional
-from fastapi import FastAPI, Query, HTTPException, Response
+from fastapi import FastAPI, APIRouter, Query, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from backend.analytics.data_loader import get_data_store
-from backend.analytics.data_quality import inspect_data_quality
-from backend.analytics.preprocessing import run_cleaning_pipeline
-from backend.analytics.customer_analysis import analyze_customers
-from backend.analytics.credit_analysis import analyze_credit
-from backend.analytics.transaction_analysis import analyze_transactions
-from backend.analytics.segmentation import segment_customers
-from backend.analytics.target_scoring import evaluate_target_segments, DEFAULT_WEIGHTS
-from backend.analytics.insights import generate_insights
-from backend.analytics.report_generator import generate_executive_report, generate_printable_html
+# Ensure sys.path includes both backend and root directories for Vercel/local flexibility
+BASE_DIR = Path(__file__).resolve().parent
+ROOT_DIR = BASE_DIR.parent
+for d in (str(BASE_DIR), str(ROOT_DIR)):
+    if d not in sys.path:
+        sys.path.insert(0, d)
+
+try:
+    from backend.analytics.data_loader import get_data_store
+    from backend.analytics.data_quality import inspect_data_quality
+    from backend.analytics.preprocessing import run_cleaning_pipeline
+    from backend.analytics.customer_analysis import analyze_customers
+    from backend.analytics.credit_analysis import analyze_credit
+    from backend.analytics.transaction_analysis import analyze_transactions
+    from backend.analytics.segmentation import segment_customers
+    from backend.analytics.target_scoring import evaluate_target_segments, DEFAULT_WEIGHTS
+    from backend.analytics.insights import generate_insights
+    from backend.analytics.report_generator import generate_executive_report, generate_printable_html
+except ImportError:
+    from analytics.data_loader import get_data_store
+    from analytics.data_quality import inspect_data_quality
+    from analytics.preprocessing import run_cleaning_pipeline
+    from analytics.customer_analysis import analyze_customers
+    from analytics.credit_analysis import analyze_credit
+    from analytics.transaction_analysis import analyze_transactions
+    from analytics.segmentation import segment_customers
+    from analytics.target_scoring import evaluate_target_segments, DEFAULT_WEIGHTS
+    from analytics.insights import generate_insights
+    from analytics.report_generator import generate_executive_report, generate_printable_html
 
 app = FastAPI(
     title="CreditIQ Analytics API",
     description="Credit Card Customer Analytics & Segmentation Platform",
     version="1.0.0"
 )
+
+api_router = APIRouter()
 
 # CORS configuration: allows local dev, FRONTEND_URL, and Vercel domains
 allowed_origins = [
@@ -123,11 +146,12 @@ class DataExplorerRequest(BaseModel):
 # ENDPOINTS
 # ==========================================
 
-@app.get("/api/health")
+@api_router.get("/health")
 def health_check():
     active = store.get_active_data()
     return {
         "status": "healthy",
+        "engine": "python-fastapi",
         "app_name": "CreditIQ Analytics",
         "version": "1.0.0",
         "data_status": {
@@ -141,7 +165,7 @@ def health_check():
     }
 
 
-@app.get("/api/pipeline-status")
+@api_router.get("/pipeline-status")
 def get_pipeline_status():
     return {
         "stages": store.pipeline_stages,
@@ -149,7 +173,7 @@ def get_pipeline_status():
     }
 
 
-@app.post("/api/reset-data")
+@api_router.post("/reset-data")
 def reset_dataset(req: ResetRequest):
     """
     Resets the complete synthetic dataset with a new or default seed.
@@ -163,7 +187,7 @@ def reset_dataset(req: ResetRequest):
     }
 
 
-@app.post("/api/clean")
+@api_router.post("/clean")
 def run_cleaning():
     """
     Executes the data cleaning pipeline and returns before vs after metrics.
@@ -172,7 +196,7 @@ def run_cleaning():
     return report
 
 
-@app.get("/api/data-quality")
+@api_router.get("/data-quality")
 def get_data_quality():
     """
     Inspects raw dataset data quality and returns the dynamic Data Quality Score.
@@ -180,7 +204,7 @@ def get_data_quality():
     return inspect_data_quality(store.raw_data)
 
 
-@app.post("/api/overview")
+@api_router.post("/overview")
 def get_overview(req: FilterRequest):
     """
     Provides top KPI cards and distribution charts reflecting global filters.
@@ -255,25 +279,25 @@ def get_overview(req: FilterRequest):
     }
 
 
-@app.post("/api/customers")
+@api_router.post("/customers")
 def get_customer_analytics(req: FilterRequest):
     data = store.filter_data(req.model_dump(), use_raw=req.use_raw)
     return analyze_customers(data["customers"])
 
 
-@app.post("/api/credit")
+@api_router.post("/credit")
 def get_credit_analytics(req: FilterRequest):
     data = store.filter_data(req.model_dump(), use_raw=req.use_raw)
     return analyze_credit(data["credit_profiles"], data["customers"])
 
 
-@app.post("/api/transactions")
+@api_router.post("/transactions")
 def get_transaction_analytics(req: FilterRequest):
     data = store.filter_data(req.model_dump(), use_raw=req.use_raw)
     return analyze_transactions(data["transactions"], data["customers"])
 
 
-@app.post("/api/segments")
+@api_router.post("/segments")
 def get_segments(req: SegmentationRequest):
     filters_dict = req.filters.model_dump() if req.filters else {}
     data = store.filter_data(filters_dict)
@@ -290,7 +314,7 @@ def get_segments(req: SegmentationRequest):
     )
 
 
-@app.post("/api/target-segment-analysis")
+@api_router.post("/target-segment-analysis")
 def get_target_segment_analysis(req: TargetScoringRequest):
     filters_dict = req.filters.model_dump() if req.filters else {}
     data = store.filter_data(filters_dict)
@@ -312,7 +336,7 @@ def get_target_segment_analysis(req: TargetScoringRequest):
     )
 
 
-@app.post("/api/insights")
+@api_router.post("/insights")
 def get_automated_insights(req: FilterRequest):
     filters_dict = req.model_dump()
     data = store.filter_data(filters_dict)
@@ -332,7 +356,7 @@ def get_automated_insights(req: FilterRequest):
     )
 
 
-@app.post("/api/export-report")
+@api_router.post("/export-report")
 def export_report_endpoint():
     """
     Builds the full customer segmentation report and returns both structured data and printable HTML.
@@ -381,7 +405,7 @@ def export_report_endpoint():
     }
 
 
-@app.post("/api/data-explorer")
+@api_router.post("/data-explorer")
 def explore_dataset(req: DataExplorerRequest):
     """
     Row inspection with pagination, search, sorting, and column filtering.
@@ -439,7 +463,7 @@ def explore_dataset(req: DataExplorerRequest):
     }
 
 
-@app.get("/api/export-csv/{table_name}")
+@api_router.get("/export-csv/{table_name}")
 def export_csv(table_name: str):
     """
     Downloads CSV for any raw or cleaned dataset.
@@ -469,3 +493,21 @@ def export_csv(table_name: str):
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=creditiq_{tbl}.csv"}
     )
+
+
+# ==========================================
+# ROUTER MOUNTING & ROOT HANDLERS
+# ==========================================
+
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "app": "CreditIQ Analytics API",
+        "engine": "python-fastapi",
+        "docs_url": "/docs"
+    }
+
+# Dual-mount: available at both /api/* and root /* for seamless Vercel Services routing
+app.include_router(api_router, prefix="/api")
+app.include_router(api_router)

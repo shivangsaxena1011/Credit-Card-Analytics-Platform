@@ -223,3 +223,49 @@ def test_data_loader_caching_and_customer_linking():
     valid_custs = set(res1["customers"]["cust_id"])
     txn_custs = set(res1["transactions"]["cust_id"])
     assert txn_custs.issubset(valid_custs)
+
+
+def test_api_endpoints_dual_mount():
+    """Verify FastAPI routes resolve identically with and without /api prefix."""
+    from fastapi.testclient import TestClient
+    from backend.main import app
+
+    client = TestClient(app)
+
+    # 1. Root route
+    r_root = client.get("/")
+    assert r_root.status_code == 200
+    assert r_root.json()["engine"] == "python-fastapi"
+
+    # 2. Health check on both /health and /api/health
+    r_health_plain = client.get("/health")
+    assert r_health_plain.status_code == 200
+    assert r_health_plain.json()["engine"] == "python-fastapi"
+
+    r_health_api = client.get("/api/health")
+    assert r_health_api.status_code == 200
+    assert r_health_api.json()["engine"] == "python-fastapi"
+    assert r_health_plain.json()["data_status"] == r_health_api.json()["data_status"]
+
+    # 3. Pipeline status
+    assert client.get("/pipeline-status").status_code == 200
+    assert client.get("/api/pipeline-status").status_code == 200
+
+    # 4. Data Quality
+    dq1 = client.get("/data-quality").json()
+    dq2 = client.get("/api/data-quality").json()
+    assert dq1["quality_score"] == dq2["quality_score"]
+    assert dq1["quality_score"] > 0
+
+    # 5. Overview POST
+    r_ov1 = client.post("/overview", json={})
+    r_ov2 = client.post("/api/overview", json={})
+    assert r_ov1.status_code == 200
+    assert r_ov2.status_code == 200
+    assert "kpis" in r_ov1.json()
+    assert r_ov1.json()["kpis"]["total_customers"] == r_ov2.json()["kpis"]["total_customers"]
+
+    # 6. CSV export endpoint
+    r_csv = client.get("/api/export-csv/customers")
+    assert r_csv.status_code == 200
+    assert "text/csv" in r_csv.headers["content-type"]

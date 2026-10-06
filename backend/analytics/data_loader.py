@@ -9,11 +9,23 @@ import json
 import math
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, Tuple, List
+import sys
+from pathlib import Path
 
-from backend.analytics.data_generator import generate_synthetic_data
-from backend.analytics.data_quality import inspect_data_quality
-from backend.analytics.preprocessing import run_cleaning_pipeline
+_BASE_DIR = Path(__file__).resolve().parent
+_ROOT_DIR = _BASE_DIR.parent.parent
+for _d in (str(_BASE_DIR.parent), str(_ROOT_DIR)):
+    if _d not in sys.path:
+        sys.path.insert(0, _d)
+
+try:
+    from backend.analytics.data_generator import generate_synthetic_data
+    from backend.analytics.data_quality import inspect_data_quality
+    from backend.analytics.preprocessing import run_cleaning_pipeline
+except ImportError:
+    from analytics.data_generator import generate_synthetic_data
+    from analytics.data_quality import inspect_data_quality
+    from analytics.preprocessing import run_cleaning_pipeline
 
 
 class DataStore:

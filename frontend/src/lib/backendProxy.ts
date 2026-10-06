@@ -1,8 +1,25 @@
 import { NextResponse } from "next/server";
 
-// Authoritative Python FastAPI analytics engine base URL
-const RAW_BACKEND_URL = process.env.BACKEND_URL;
-const BACKEND_BASE_URL = (RAW_BACKEND_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+/**
+ * Resolves the backend base URL dynamically.
+ * Prioritizes:
+ * 1. BACKEND_URL (injected automatically via Vercel Services binding)
+ * 2. VERCEL_URL (injected automatically on Vercel preview/production deployments)
+ * 3. Localhost (ONLY in local development when NODE_ENV !== "production")
+ */
+function getBackendBaseUrl(): string | null {
+  if (process.env.BACKEND_URL) {
+    return process.env.BACKEND_URL.replace(/\/$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    const protocol = process.env.VERCEL_URL.startsWith("localhost") ? "http" : "https";
+    return `${protocol}://${process.env.VERCEL_URL}`.replace(/\/$/, "");
+  }
+  if (process.env.NODE_ENV !== "production") {
+    return "http://127.0.0.1:8000";
+  }
+  return null;
+}
 
 /**
  * Proxies an API request from Next.js route directly to the Python FastAPI backend.
@@ -13,7 +30,19 @@ export async function proxyToBackend(
   method: "GET" | "POST" = "POST",
   body?: any
 ) {
-  const url = `${BACKEND_BASE_URL}${endpoint}`;
+  const baseUrl = getBackendBaseUrl();
+  if (!baseUrl) {
+    return NextResponse.json(
+      {
+        error:
+          "FastAPI analytics engine is not reachable: BACKEND_URL service binding is not configured for production. Please verify your Vercel Services setup.",
+        engine: "python-fastapi",
+      },
+      { status: 503 }
+    );
+  }
+
+  const url = `${baseUrl}${endpoint}`;
 
   try {
     const options: RequestInit = {
@@ -37,7 +66,7 @@ export async function proxyToBackend(
         status: response.status,
         headers: {
           "X-Engine-Source": "python-fastapi",
-        }
+        },
       });
     }
 
@@ -47,14 +76,14 @@ export async function proxyToBackend(
       headers: {
         "Content-Type": contentType || "text/plain",
         "X-Engine-Source": "python-fastapi",
-      }
+      },
     });
   } catch (err: any) {
     console.error(`[CreditIQ] FastAPI proxy error for ${url}:`, err.message);
     return NextResponse.json(
       {
-        error: `FastAPI analytics engine is unreachable at ${url}. Please ensure the backend server is running. (${err.message})`,
-        engine: "python-fastapi"
+        error: `FastAPI analytics engine is unreachable at ${url}. (${err.message})`,
+        engine: "python-fastapi",
       },
       { status: 502 }
     );
@@ -65,7 +94,18 @@ export async function proxyToBackend(
  * Proxies a CSV export request directly from the Python FastAPI backend.
  */
 export async function proxyCsvToBackend(tableName: string) {
-  const url = `${BACKEND_BASE_URL}/api/export-csv/${tableName}`;
+  const baseUrl = getBackendBaseUrl();
+  if (!baseUrl) {
+    return new NextResponse(
+      "Error: FastAPI backend service binding is not configured. Please verify your Vercel Services setup.",
+      {
+        status: 503,
+        headers: { "Content-Type": "text/plain" },
+      }
+    );
+  }
+
+  const url = `${baseUrl}/api/export-csv/${tableName}`;
 
   try {
     const response = await fetch(url, {
@@ -85,13 +125,13 @@ export async function proxyCsvToBackend(tableName: string) {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename=creditiq_${tableName}.csv`,
         "X-Engine-Source": "python-fastapi",
-      }
+      },
     });
   } catch (err: any) {
     console.error(`[CreditIQ] FastAPI CSV proxy error for ${url}:`, err.message);
     return new NextResponse(`Error: FastAPI backend unreachable (${err.message})`, {
       status: 502,
-      headers: { "Content-Type": "text/plain" }
+      headers: { "Content-Type": "text/plain" },
     });
   }
 }

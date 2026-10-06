@@ -8,7 +8,11 @@ Maintains raw data untouched and dynamically calculates the real post-cleaning q
 import numpy as np
 import pandas as pd
 from typing import Dict, Any, Tuple
-from backend.analytics.data_quality import inspect_data_quality
+try:
+    from backend.analytics.data_quality import inspect_data_quality
+except ImportError:
+    from analytics.data_quality import inspect_data_quality
+
 
 
 def run_cleaning_pipeline(raw_data: Dict[str, pd.DataFrame]) -> Tuple[Dict[str, pd.DataFrame], Dict[str, Any]]:
