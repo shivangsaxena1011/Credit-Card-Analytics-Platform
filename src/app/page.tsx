@@ -16,7 +16,6 @@ import { TargetSegmentView } from "../components/views/TargetSegmentView";
 import { InsightsView } from "../components/views/InsightsView";
 import { DataExplorerView } from "../components/views/DataExplorerView";
 import { ExportReportView } from "../components/views/ExportReportView";
-import { SettingsView } from "../components/views/SettingsView";
 
 import { api } from "../services/api";
 import {
@@ -131,10 +130,6 @@ export default function Home() {
     report: {
       title: "Export & Report",
       subtitle: "Strategic customer segmentation report with browser printing and CSV exports"
-    },
-    settings: {
-      title: "Settings & Reset",
-      subtitle: "Reset synthetic datasets, configure simulation parameters, and check engine runtime status"
     }
   };
 
@@ -328,10 +323,8 @@ export default function Home() {
         <Header
           pageTitle={currentTitle.title}
           pageSubtitle={currentTitle.subtitle}
-          pipelineStages={pipelineStages}
           filters={filters}
           onOpenFilters={() => setIsFilterModalOpen(true)}
-          onLoadDemo={() => handleLoadDemo(42)}
           onRefresh={() => loadData(filters)}
           isLoading={isLoading}
         />
@@ -435,16 +428,6 @@ export default function Home() {
 
           {currentTab === "report" && (
             <ExportReportView />
-          )}
-
-          {currentTab === "settings" && (
-            <SettingsView
-              pipelineStages={pipelineStages}
-              onResetData={handleLoadDemo}
-              onApplyClean={handleApplyClean}
-              isLoading={isLoading}
-              isCleaned={isCleaned}
-            />
           )}
         </main>
       </div>

@@ -31,7 +31,6 @@ export const DataExplorerView: React.FC = () => {
     { id: "cleaned_credit", label: "Cleaned Credit Profiles" },
     { id: "transactions", label: "Raw Transactions" },
     { id: "cleaned_transactions", label: "Cleaned Transactions" },
-    { id: "experiment", label: "Experiment Data" },
   ];
 
   const fetchData = async () => {

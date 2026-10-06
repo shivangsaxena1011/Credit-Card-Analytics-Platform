@@ -51,16 +51,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const recSeg = targetData?.recommended_segment;
   const decisionPanel = insightsData?.decision_panel;
 
-  const workflowSteps = [
-    { title: "1. Raw Data", status: "Audited", icon: Layers, tab: "overview" },
-    { title: "2. Clean Pipeline", status: "Cleaned", icon: ShieldCheck, tab: "quality" },
-    { title: "3. Demographics", status: "Analyzed", icon: Users, tab: "customers" },
-    { title: "4. Credit & Spend", status: "Profiled", icon: CreditCard, tab: "credit" },
-    { title: "5. Segmentation", status: "Clustered", icon: PieChart, tab: "segmentation" },
-    { title: "6. Target Engine", status: "Ranked", icon: Sparkles, tab: "target" },
-    { title: "7. Strategic Insights", status: "Actionable", icon: Lightbulb, tab: "insights" }
-  ];
-
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
       {/* Core Answer Hero Banner */}
@@ -138,43 +128,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               {decisionPanel?.recommendation || "Prioritize digital acquisition and introductory card products for the 18–25 segment."}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Visual Analytics Workflow Progression */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Customer Analytics & Segmentation Workflow</h3>
-            <p className="text-xs text-slate-500">Step-by-step pipeline from raw records to targeted cohort activation</p>
-          </div>
-          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-            Core Modules Active
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
-          {workflowSteps.map((step, idx) => {
-            const Icon = step.icon;
-            return (
-              <button
-                key={idx}
-                onClick={() => onNavigate(step.tab)}
-                className="p-3 bg-slate-50 hover:bg-indigo-50/50 rounded-lg border border-slate-200 hover:border-indigo-200 text-left transition group cursor-pointer"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="w-6 h-6 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-indigo-600">
-                    <Icon className="w-3.5 h-3.5" />
-                  </div>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                </div>
-                <div className="text-xs font-bold text-slate-800 group-hover:text-indigo-900 truncate">
-                  {step.title}
-                </div>
-                <div className="text-[10px] text-slate-500 font-medium">{step.status}</div>
-              </button>
-            );
-          })}
         </div>
       </div>
 

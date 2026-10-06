@@ -65,18 +65,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ]
     },
     {
-      title: "SEGMENTATION & TARGETING",
+      title: "SEGMENTATION & STRATEGY",
       items: [
         { id: "segmentation", label: "Customer Segmentation", icon: PieChart },
         { id: "target", label: "Target Segment Analysis", icon: Sparkles, highlight: true },
-      ]
-    },
-    {
-      title: "STRATEGY & EXPORTS",
-      items: [
         { id: "insights", label: "Insights & Recommendations", icon: Lightbulb },
         { id: "report", label: "Export & Report", icon: FileSpreadsheet },
-        { id: "settings", label: "Settings & Reset", icon: Settings },
       ]
     }
   ];
