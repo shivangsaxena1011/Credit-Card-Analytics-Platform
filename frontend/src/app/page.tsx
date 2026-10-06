@@ -50,9 +50,7 @@ const DEFAULT_STAGES: PipelineStages = {
   VALIDATED: "Completed",
   CLEANED: "Completed",
   ANALYZED: "Completed",
-  SEGMENTED: "Completed",
-  EXPERIMENT_READY: "Completed",
-  TESTED: "Completed"
+  SEGMENTED: "Completed"
 };
 
 export default function Home() {
@@ -63,7 +61,6 @@ export default function Home() {
   const [isCleaning, setIsCleaning] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "info" | "warning"; text: string } | null>(null);
-  const [engine, setEngine] = useState<string>("typescript-standalone");
 
   // Core Analytics states
   const [pipelineStages, setPipelineStages] = useState<PipelineStages>(DEFAULT_STAGES);
@@ -141,7 +138,7 @@ export default function Home() {
     }
   };
 
-  // Fetch all core analytics data concurrently and resiliently
+  // Fetch all core analytics data concurrently from FastAPI
   const loadData = useCallback(async (currentFilters: FilterState) => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -158,8 +155,8 @@ export default function Home() {
         insRes
       ] = await Promise.all([
         api.getPipelineStatus().catch((err) => {
-          console.warn("Pipeline status fallback:", err);
-          return { stages: DEFAULT_STAGES, is_cleaned: true, engine: "typescript-standalone" };
+          console.warn("Pipeline status fetch failed:", err);
+          return { stages: DEFAULT_STAGES, is_cleaned: true };
         }),
         api.getOverview(currentFilters).catch((err) => {
           console.error("Overview fetch error:", err);
@@ -198,9 +195,6 @@ export default function Home() {
       if (pipeRes) {
         setPipelineStages(pipeRes.stages || DEFAULT_STAGES);
         setIsCleaned(pipeRes.is_cleaned ?? true);
-        if (pipeRes.engine) {
-          setEngine(pipeRes.engine);
-        }
       }
 
       if (ovRes) {
@@ -249,9 +243,6 @@ export default function Home() {
       const rep = await api.cleanData();
       setCleaningReport(rep);
       setIsCleaned(true);
-      if ((rep as any).engine) {
-        setEngine((rep as any).engine);
-      }
       setStatusMsg({
         type: "success",
         text: `Data cleaning pipeline applied successfully. Dynamic quality score verified at ${rep.before_quality_score.toFixed(1)}% → ${rep.after_quality_score.toFixed(1)}%.`
@@ -269,8 +260,7 @@ export default function Home() {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const res = await api.resetData(seed);
-      if (res?.engine) setEngine(res.engine);
+      await api.resetData(seed);
       setStatusMsg({
         type: "info",
         text: `Demo dataset successfully re-initialized with seed ${seed}.`
@@ -330,7 +320,6 @@ export default function Home() {
         isCleaned={isCleaned}
         onApplyClean={handleApplyClean}
         isCleaning={isCleaning}
-        engine={engine}
       />
 
       {/* Main Workspace Content Area */}
@@ -345,7 +334,6 @@ export default function Home() {
           onLoadDemo={() => handleLoadDemo(42)}
           onRefresh={() => loadData(filters)}
           isLoading={isLoading}
-          engine={engine}
         />
 
         {/* Status Confirmation Banner if any */}
@@ -456,7 +444,6 @@ export default function Home() {
               onApplyClean={handleApplyClean}
               isLoading={isLoading}
               isCleaned={isCleaned}
-              engine={engine}
             />
           )}
         </main>

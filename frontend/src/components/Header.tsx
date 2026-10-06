@@ -13,7 +13,6 @@ interface HeaderProps {
   onLoadDemo: () => void;
   onRefresh: () => void;
   isLoading: boolean;
-  engine?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,8 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenFilters,
   onLoadDemo,
   onRefresh,
-  isLoading,
-  engine = "typescript-standalone"
+  isLoading
 }) => {
   // Count active non-default filters
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => {
@@ -84,15 +82,11 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Engine Status Badge */}
         <div
-          title={engine === "python-fastapi" ? "Authoritative Python FastAPI Analytics Engine connected" : "Next.js TypeScript Standalone Analytics Engine active"}
-          className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${
-            engine === "python-fastapi"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-              : "bg-indigo-50 text-indigo-800 border-indigo-200"
-          }`}
+          title="Authoritative Python FastAPI Analytics Engine"
+          className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border bg-emerald-50 text-emerald-800 border-emerald-200"
         >
-          <span className={`w-2 h-2 rounded-full ${engine === "python-fastapi" ? "bg-emerald-500 animate-pulse" : "bg-indigo-500"}`} />
-          <span>{engine === "python-fastapi" ? "FastAPI Engine" : "Vercel Standalone Engine"}</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span>FastAPI Engine</span>
         </div>
 
         {/* Global Filters Trigger Button */}
@@ -117,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={onLoadDemo}
           disabled={isLoading}
-          className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs shadow-indigo-600/30 transition disabled:opacity-50"
+          className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs shadow-indigo-600/30 transition disabled:opacity-50 cursor-pointer"
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>Load Demo Dataset</span>
@@ -128,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onRefresh}
           disabled={isLoading}
           title="Refresh Current View"
-          className="p-1.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition disabled:opacity-50"
+          className="p-1.5 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition disabled:opacity-50 cursor-pointer"
         >
           <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
         </button>

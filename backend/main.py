@@ -1,7 +1,7 @@
 """
 CreditIQ Analytics - FastAPI Backend Server
-Provides comprehensive REST API endpoints for banking analytics,
-customer segmentation, statistical A/B testing, and reporting.
+Provides REST API endpoints for credit card customer analytics,
+data cleaning, cohort segmentation, and portfolio reporting.
 """
 
 import io
@@ -22,19 +22,16 @@ from backend.analytics.credit_analysis import analyze_credit
 from backend.analytics.transaction_analysis import analyze_transactions
 from backend.analytics.segmentation import segment_customers
 from backend.analytics.target_scoring import evaluate_target_segments, DEFAULT_WEIGHTS
-from backend.analytics.experiment import analyze_experiment
-from backend.analytics.power_analysis import calculate_power_and_sample_size
-from backend.analytics.hypothesis_testing import run_hypothesis_test
 from backend.analytics.insights import generate_insights
 from backend.analytics.report_generator import generate_executive_report, generate_printable_html
 
 app = FastAPI(
     title="CreditIQ Analytics API",
-    description="Credit Card Customer Analytics, Segmentation & A/B Testing Platform",
+    description="Credit Card Customer Analytics & Segmentation Platform",
     version="1.0.0"
 )
 
-# Robust CORS configuration: allows local dev, FRONTEND_URL, and Vercel domains
+# CORS configuration: allows local dev, FRONTEND_URL, and Vercel domains
 allowed_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -113,31 +110,6 @@ class TargetScoringRequest(BaseModel):
     filters: Optional[FilterRequest] = None
 
 
-class ExperimentRequest(BaseModel):
-    control_label: Optional[str] = "Control"
-    test_label: Optional[str] = "Test"
-    metric_name: Optional[str] = "Average Transaction Value"
-    segment: Optional[str] = None
-    filters: Optional[FilterRequest] = None
-
-
-class PowerAnalysisRequest(BaseModel):
-    alpha: Optional[float] = Field(0.05, gt=0.0, lt=1.0)
-    power: Optional[float] = Field(0.80, gt=0.0, lt=1.0)
-    effect_size: Optional[float] = Field(0.20, gt=0.0)
-    alternative: Optional[str] = Field("larger", pattern="^(larger|smaller|two-sided)$")
-
-
-class HypothesisTestRequest(BaseModel):
-    test_type: Optional[str] = Field("z_test", pattern="^(z_test|t_test)$")
-    alternative: Optional[str] = Field("larger", pattern="^(larger|smaller|two-sided)$")
-    alpha: Optional[float] = Field(0.05, gt=0.0, lt=1.0)
-    control_label: Optional[str] = "Control"
-    test_label: Optional[str] = "Test"
-    segment: Optional[str] = None
-    filters: Optional[FilterRequest] = None
-
-
 class DataExplorerRequest(BaseModel):
     table_name: str = "customers"
     page: int = Field(1, ge=1)
@@ -163,8 +135,7 @@ def health_check():
             "seed": store.seed,
             "customer_count": len(active["customers"]),
             "credit_profile_count": len(active["credit_profiles"]),
-            "transaction_count": len(active["transactions"]),
-            "experiment_count": len(active["experiment"])
+            "transaction_count": len(active["transactions"])
         },
         "pipeline_stages": store.pipeline_stages
     }
@@ -341,58 +312,6 @@ def get_target_segment_analysis(req: TargetScoringRequest):
     )
 
 
-@app.post("/api/experiment-summary")
-def get_experiment_summary(req: ExperimentRequest):
-    filters_dict = req.filters.model_dump() if req.filters else {}
-    data = store.filter_data(filters_dict)
-    return analyze_experiment(
-        data["experiment"],
-        control_label=req.control_label or "Control",
-        test_label=req.test_label or "Test",
-        metric_name=req.metric_name or "Average Transaction Value",
-        segment_filter=req.segment
-    )
-
-
-@app.post("/api/power-analysis")
-def get_power_analysis(req: PowerAnalysisRequest):
-    return calculate_power_and_sample_size(
-        alpha=req.alpha if req.alpha is not None else 0.05,
-        power=req.power if req.power is not None else 0.80,
-        effect_size=req.effect_size if req.effect_size is not None else 0.20,
-        alternative=req.alternative or "larger"
-    )
-
-
-@app.post("/api/hypothesis-test")
-def get_hypothesis_test(req: HypothesisTestRequest):
-    filters_dict = req.filters.model_dump() if req.filters else {}
-    data = store.filter_data(filters_dict)
-    df_exp = data["experiment"]
-
-    if req.segment and req.segment != "All" and "segment_name" in df_exp.columns:
-        seg_exp = df_exp[df_exp["segment_name"] == req.segment]
-        if not seg_exp.empty:
-            df_exp = seg_exp
-
-    ctrl_label = req.control_label or "Control"
-    test_label = req.test_label or "Test"
-
-    ctrl_df = df_exp[df_exp["group"] == ctrl_label]
-    test_df = df_exp[df_exp["group"] == test_label]
-
-    ctrl_vals = pd.to_numeric(ctrl_df["metric_value"], errors="coerce").dropna().values
-    test_vals = pd.to_numeric(test_df["metric_value"], errors="coerce").dropna().values
-
-    return run_hypothesis_test(
-        control_vals=ctrl_vals,
-        test_vals=test_vals,
-        test_type=req.test_type or "z_test",
-        alternative=req.alternative or "larger",
-        alpha=req.alpha if req.alpha is not None else 0.05
-    )
-
-
 @app.post("/api/insights")
 def get_automated_insights(req: FilterRequest):
     filters_dict = req.model_dump()
@@ -403,27 +322,20 @@ def get_automated_insights(req: FilterRequest):
     txn_analytics = analyze_transactions(data["transactions"], data["customers"])
     segmentation_data = segment_customers(data["customers"], data["credit_profiles"], data["transactions"])
     target_data = evaluate_target_segments(segmentation_data["segments"])
-    exp_data = analyze_experiment(data["experiment"])
-    
-    ctrl_vals = pd.to_numeric(data["experiment"][data["experiment"]["group"] == "Control"]["metric_value"], errors="coerce").dropna().values
-    test_vals = pd.to_numeric(data["experiment"][data["experiment"]["group"] == "Test"]["metric_value"], errors="coerce").dropna().values
-    test_result = run_hypothesis_test(ctrl_vals, test_vals, test_type="z_test", alternative="larger", alpha=0.05)
 
     return generate_insights(
         cust_analytics,
         credit_analytics,
         txn_analytics,
         segmentation_data,
-        target_data,
-        exp_data,
-        test_result
+        target_data
     )
 
 
 @app.post("/api/export-report")
 def export_report_endpoint():
     """
-    Builds the full executive report and returns both the structured data and printable HTML.
+    Builds the full customer segmentation report and returns both structured data and printable HTML.
     """
     raw_quality = inspect_data_quality(store.raw_data)
     cleaning_rep = store.cleaning_report or store.apply_cleaning()
@@ -432,7 +344,6 @@ def export_report_endpoint():
     df_cust = clean_data["customers"]
     df_credit = clean_data["credit_profiles"]
     df_txn = clean_data["transactions"]
-    df_exp = clean_data["experiment"]
 
     overview_kpis = {
         "total_customers": len(df_cust),
@@ -450,22 +361,16 @@ def export_report_endpoint():
     txn_analytics = analyze_transactions(df_txn, df_cust)
     segmentation_data = segment_customers(df_cust, df_credit, df_txn)
     target_data = evaluate_target_segments(segmentation_data["segments"])
-    exp_data = analyze_experiment(df_exp)
-    power_data = calculate_power_and_sample_size(alpha=0.05, power=0.80, effect_size=0.20, alternative="larger")
-
-    ctrl_vals = pd.to_numeric(df_exp[df_exp["group"] == "Control"]["metric_value"], errors="coerce").dropna().values
-    test_vals = pd.to_numeric(df_exp[df_exp["group"] == "Test"]["metric_value"], errors="coerce").dropna().values
-    hypo_data = run_hypothesis_test(ctrl_vals, test_vals, test_type="z_test", alternative="larger", alpha=0.05)
 
     insights_data = generate_insights(
         cust_analytics, credit_analytics, txn_analytics,
-        segmentation_data, target_data, exp_data, hypo_data
+        segmentation_data, target_data
     )
 
     report_data = generate_executive_report(
         overview_kpis, raw_quality, cleaning_rep, cust_analytics,
         credit_analytics, txn_analytics, segmentation_data,
-        target_data, exp_data, power_data, hypo_data, insights_data
+        target_data, insights_data
     )
 
     printable_html = generate_printable_html(report_data)
@@ -496,8 +401,6 @@ def explore_dataset(req: DataExplorerRequest):
         df = store.raw_data["transactions"].copy()
     elif table_name == "cleaned_transactions":
         df = store.cleaned_data["transactions"].copy()
-    elif table_name == "experiment":
-        df = store.raw_data["experiment"].copy()
     else:
         raise HTTPException(status_code=400, detail=f"Unknown table: {table_name}")
 
@@ -554,8 +457,6 @@ def export_csv(table_name: str):
         df = store.raw_data["transactions"]
     elif tbl == "cleaned_transactions":
         df = store.cleaned_data["transactions"]
-    elif tbl == "experiment":
-        df = store.raw_data["experiment"]
     else:
         raise HTTPException(status_code=400, detail="Invalid table name")
 

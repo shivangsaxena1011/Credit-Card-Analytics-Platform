@@ -23,8 +23,8 @@ export interface PipelineStages {
   CLEANED: string;
   ANALYZED: string;
   SEGMENTED: string;
-  EXPERIMENT_READY: string;
-  TESTED: string;
+  EXPERIMENT_READY?: string;
+  TESTED?: string;
 }
 
 export interface OverviewKPIs {
@@ -98,37 +98,29 @@ export interface CleaningReport {
   pipeline_status: string;
   before_quality_score: number;
   after_quality_score: number;
-  records_processed: {
-    customers: number;
-    credit_profiles: number;
-    transactions: number;
-  };
   comparison_table: CleaningComparisonItem[];
+  actions_taken?: string[];
 }
 
 export interface CustomerAnalyticsData {
   summary: {
     total_customers: number;
-    avg_income: number;
-    median_income: number;
+    avg_age: number;
+    median_age: number;
     youngest_age: number;
     oldest_age: number;
-    largest_occupation: string;
-  };
-  age_distribution: Array<{ age_group: string; count: number; percentage: number }>;
-  income_distribution: Array<{ income_bracket: string; count: number; percentage: number }>;
-  income_by_occupation: Array<{
-    occupation: string;
     avg_income: number;
     median_income: number;
-    min_income: number;
-    max_income: number;
-    count: number;
-  }>;
-  location_distribution: Array<{ location: string; count: number; percentage: number }>;
+    largest_occupation: string;
+    largest_location?: string;
+  };
+  age_distribution: Array<{ age_bin: string; count: number; percentage: number }>;
+  income_distribution: Array<{ income_bracket: string; count: number; percentage: number }>;
   gender_distribution: Array<{ gender: string; count: number; percentage: number }>;
+  location_distribution: Array<{ location: string; count: number; percentage: number }>;
   marital_distribution: Array<{ marital_status: string; count: number; percentage: number }>;
-  income_vs_age: Array<{ age: number; income: number; occupation: string; name: string }>;
+  income_by_occupation: Array<{ occupation: string; mean_income: number; median_income: number; count: number }>;
+  income_vs_age: Array<{ x: number; y: number; name: string; occupation: string }>;
   occupation_location_matrix: Array<{ occupation: string; City: number; Suburb: number; Rural: number }>;
 }
 
@@ -364,10 +356,10 @@ export interface InsightItem {
 
 export interface DecisionPanelData {
   target_segment: string;
-  campaign_outcome: string;
-  statistical_significance: string;
-  observed_lift: string;
-  sample_adequacy: string;
+  campaign_outcome?: string;
+  statistical_significance?: string;
+  observed_lift?: string;
+  sample_adequacy?: string;
   recommendation: string;
   business_rationale: string;
   risks_and_caveats: string[];

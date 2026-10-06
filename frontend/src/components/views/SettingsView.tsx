@@ -2,15 +2,10 @@
 
 import React, { useState } from "react";
 import {
-  Settings,
   Sparkles,
   RotateCcw,
   CheckCircle2,
-  Database,
-  Cpu,
-  ShieldCheck,
-  RefreshCw,
-  Sliders
+  RefreshCw
 } from "lucide-react";
 import { PipelineStages } from "../../types/analytics";
 
@@ -20,7 +15,6 @@ interface SettingsViewProps {
   onApplyClean: () => void;
   isLoading: boolean;
   isCleaned: boolean;
-  engine?: string;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -28,8 +22,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onResetData,
   onApplyClean,
   isLoading,
-  isCleaned,
-  engine = "typescript-standalone"
+  isCleaned
 }) => {
   const [seed, setSeed] = useState<number>(42);
 
@@ -45,7 +38,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <p className="text-xs text-slate-500">Configure synthetic data generation seeds, re-initialize data pipelines, and verify system state</p>
       </div>
 
-      {/* Demo Dataset Reset Card (Section 36 Requirement) */}
+      {/* Demo Dataset Reset Card */}
       <div className="bg-white rounded-2xl border border-slate-200 p-7 shadow-xs space-y-5">
         <div className="flex items-center space-x-2.5">
           <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
@@ -53,7 +46,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900">Synthetic Data Simulation & Seed Control</h3>
-            <p className="text-xs text-slate-500">Generate fresh synthetic portfolios with controlled distributions and controlled dirty data</p>
+            <p className="text-xs text-slate-500">Generate fresh synthetic portfolios with controlled demographic distributions and dirty data</p>
           </div>
         </div>
 
@@ -72,12 +65,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between">
             <div>
               <span className="text-xs font-semibold text-slate-800 block">Full Dataset Reset</span>
-              <p className="text-[10px] text-slate-500 mt-1">Re-generates 1k customers, 1k credit profiles, 65k txns, and A/B test arm</p>
+              <p className="text-[10px] text-slate-500 mt-1">Re-generates 1k customers, 1k credit profiles, and 65k transactions</p>
             </div>
             <button
               onClick={handleReset}
               disabled={isLoading}
-              className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center space-x-1.5 disabled:opacity-50"
+              className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? (
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -91,34 +84,36 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col justify-between">
             <div>
               <span className="text-xs font-semibold text-slate-800 block">Cleaning Pipeline Trigger</span>
-              <p className="text-[10px] text-slate-500 mt-1">Re-execute median imputation, deduplication, and IQR capping</p>
+              <p className="text-[10px] text-slate-500 mt-1">Re-execute median imputation, deduplication, and debt capping</p>
             </div>
             <button
               onClick={onApplyClean}
               disabled={isLoading}
-              className="w-full mt-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center space-x-1.5 disabled:opacity-50"
+              className="w-full mt-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer"
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Apply Cleaning Pipeline</span>
+              {isLoading ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5" />
+              )}
+              <span>Execute Cleaning Pipeline</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Pipeline Stages Verification Panel (Section 28 Requirement) */}
+      {/* Pipeline Stages Verification Panel */}
       <div className="bg-white rounded-2xl border border-slate-200 p-7 shadow-xs space-y-4">
         <h3 className="text-sm font-bold text-slate-900">Pipeline Lifecycle Stage Architecture</h3>
-        <p className="text-xs text-slate-500">Live operational status of banking analytics transformation stages</p>
+        <p className="text-xs text-slate-500">Live operational status of customer analytics transformation stages</p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
           {[
             { stage: "RAW DATA", key: "RAW_DATA", desc: "1,000 customers & 65k txns generated" },
             { stage: "VALIDATED", key: "VALIDATED", desc: "Data quality audit calculated" },
             { stage: "CLEANED", key: "CLEANED", desc: "Deterministic imputation applied" },
             { stage: "ANALYZED", key: "ANALYZED", desc: "Multi-domain metrics aggregated" },
             { stage: "SEGMENTED", key: "SEGMENTED", desc: "Age cohorts clustered" },
-            { stage: "EXP READY", key: "EXPERIMENT_READY", desc: "Control & Test partitioned" },
-            { stage: "TESTED", key: "TESTED", desc: "Z/t statistical hypothesis solved" },
           ].map((item, idx) => {
             const isCompleted = (pipelineStages as any)[item.key] === "Completed";
             return (
@@ -146,26 +141,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-7 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900">System Technical Stack & Environmental Health</h3>
-          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${
-            engine === "python-fastapi"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-              : "bg-indigo-50 text-indigo-800 border-indigo-200"
-          }`}>
-            {engine === "python-fastapi" ? "Active: Python FastAPI Engine" : "Active: Vercel Standalone Engine"}
+          <span className="text-[11px] font-semibold px-2 py-0.5 rounded border bg-emerald-50 text-emerald-800 border-emerald-200">
+            Active: Python FastAPI Engine
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
             <span className="text-slate-400 text-[10px] font-sans">Backend Runtime</span>
-            <div className="font-bold text-slate-900 mt-0.5">
-              {engine === "python-fastapi" ? "Python 3.11+ / FastAPI" : "Next.js 16 Serverless"}
-            </div>
+            <div className="font-bold text-slate-900 mt-0.5">Python 3.11+ / FastAPI</div>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
             <span className="text-slate-400 text-[10px] font-sans">Statistical Engine</span>
-            <div className="font-bold text-slate-900 mt-0.5">
-              {engine === "python-fastapi" ? "SciPy + Statsmodels" : "TypeScript Analytics"}
-            </div>
+            <div className="font-bold text-slate-900 mt-0.5">NumPy, Pandas & SciPy</div>
           </div>
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
             <span className="text-slate-400 text-[10px] font-sans">Frontend Framework</span>

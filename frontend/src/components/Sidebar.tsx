@@ -24,7 +24,6 @@ interface SidebarProps {
   isCleaned: boolean;
   onApplyClean: () => void;
   isCleaning: boolean;
-  engine?: string;
 }
 
 interface NavItem {
@@ -45,8 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   setCurrentTab,
   isCleaned,
   onApplyClean,
-  isCleaning,
-  engine = "typescript-standalone"
+  isCleaning
 }) => {
   const navSections: NavSection[] = [
     {
@@ -113,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onApplyClean}
             disabled={isCleaning}
-            className="text-[11px] px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition"
+            className="text-[11px] px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition cursor-pointer"
           >
             {isCleaning ? "Cleaning..." : "Clean"}
           </button>
@@ -134,7 +132,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   key={item.id}
                   onClick={() => setCurrentTab(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all group ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all group cursor-pointer ${
                     isActive
                       ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/40"
                       : "text-slate-400 hover:text-white hover:bg-slate-800/70"
@@ -168,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between bg-slate-950/40">
         <div>
           <p className="font-semibold text-slate-400">CreditIQ Engine</p>
-          <p>{engine === "python-fastapi" ? "Python FastAPI Engine" : "Vercel Standalone Engine"}</p>
+          <p>FastAPI Analytics Engine</p>
         </div>
         <span className="px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded text-[10px] font-mono">
           v1.0.0

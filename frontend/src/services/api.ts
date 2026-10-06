@@ -8,9 +8,6 @@ import {
   TransactionAnalyticsData,
   SegmentationData,
   TargetScoringData,
-  ExperimentData,
-  PowerAnalysisData,
-  HypothesisTestData,
   InsightsData,
   AgeGroupConfig,
   PipelineStages
@@ -25,10 +22,6 @@ async function handleResponse<T = any>(res: Response, defaultError: string): Pro
     throw new Error(msg);
   }
   const data = await res.json();
-  const engineSource = res.headers.get("X-Engine-Source");
-  if (engineSource && typeof data === "object" && data !== null && !data.engine) {
-    data.engine = engineSource;
-  }
   return data as T;
 }
 
@@ -38,7 +31,7 @@ export const api = {
     return handleResponse(res, "Backend health check failed");
   },
 
-  async getPipelineStatus(): Promise<{ stages: PipelineStages; is_cleaned: boolean; engine?: string }> {
+  async getPipelineStatus(): Promise<{ stages: PipelineStages; is_cleaned: boolean }> {
     const res = await fetch(`${BASE_URL}/api/pipeline-status`, { cache: "no-store" });
     return handleResponse(res, "Failed to fetch pipeline status");
   },
@@ -123,54 +116,6 @@ export const api = {
       body: JSON.stringify({ weights, age_groups: ageGroups, filters })
     });
     return handleResponse(res, "Failed to fetch target segment analysis");
-  },
-
-  async getExperimentSummary(
-    controlLabel: string = "Control",
-    testLabel: string = "Test",
-    metricName: string = "Average Transaction Value"
-  ): Promise<ExperimentData> {
-    const res = await fetch(`${BASE_URL}/api/experiment-summary`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ control_label: controlLabel, test_label: testLabel, metric_name: metricName })
-    });
-    return handleResponse(res, "Failed to fetch experiment summary");
-  },
-
-  async getPowerAnalysis(
-    alpha: number = 0.05,
-    power: number = 0.80,
-    effectSize: number = 0.20,
-    alternative: string = "larger"
-  ): Promise<PowerAnalysisData> {
-    const res = await fetch(`${BASE_URL}/api/power-analysis`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ alpha, power, effect_size: effectSize, alternative })
-    });
-    return handleResponse(res, "Failed to calculate power analysis");
-  },
-
-  async runHypothesisTest(
-    testType: string = "z_test",
-    alternative: string = "larger",
-    alpha: number = 0.05,
-    controlLabel: string = "Control",
-    testLabel: string = "Test"
-  ): Promise<HypothesisTestData> {
-    const res = await fetch(`${BASE_URL}/api/hypothesis-test`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        test_type: testType,
-        alternative,
-        alpha,
-        control_label: controlLabel,
-        test_label: testLabel
-      })
-    });
-    return handleResponse(res, "Failed to execute hypothesis test");
   },
 
   async getInsights(filters: FilterState): Promise<InsightsData> {

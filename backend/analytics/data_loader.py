@@ -30,9 +30,7 @@ class DataStore:
             "VALIDATED": "Completed",
             "CLEANED": "Completed",
             "ANALYZED": "Completed",
-            "SEGMENTED": "Completed",
-            "EXPERIMENT_READY": "Completed",
-            "TESTED": "Completed"
+            "SEGMENTED": "Completed"
         }
         # In-memory query cache for filtered datasets to prevent repeated 65k row scans
         self._filter_cache: Dict[str, Dict[str, pd.DataFrame]] = {}
@@ -59,9 +57,7 @@ class DataStore:
             "VALIDATED": "Completed",
             "CLEANED": "Completed",
             "ANALYZED": "Completed",
-            "SEGMENTED": "Completed",
-            "EXPERIMENT_READY": "Completed",
-            "TESTED": "Completed"
+            "SEGMENTED": "Completed"
         }
 
     def apply_cleaning(self) -> Dict[str, Any]:
