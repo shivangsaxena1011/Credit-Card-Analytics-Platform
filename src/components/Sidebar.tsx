@@ -51,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: "OVERVIEW & DATA",
       items: [
         { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { id: "card-intelligence", label: "Card Intelligence", icon: Sparkles, badge: "Customer", highlight: true },
         { id: "overview", label: "Data Overview", icon: Database },
         { id: "quality", label: "Data Quality & Cleaning", icon: ShieldCheck, badge: isCleaned ? "Clean" : "Dirty" },
         { id: "explorer", label: "Data Explorer", icon: TableProperties },

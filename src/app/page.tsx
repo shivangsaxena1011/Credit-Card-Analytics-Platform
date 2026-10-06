@@ -16,6 +16,7 @@ import { TargetSegmentView } from "../components/views/TargetSegmentView";
 import { InsightsView } from "../components/views/InsightsView";
 import { DataExplorerView } from "../components/views/DataExplorerView";
 import { ExportReportView } from "../components/views/ExportReportView";
+import { CardIntelligenceView } from "../components/views/CardIntelligenceView";
 
 import { api } from "../services/api";
 import {
@@ -90,6 +91,10 @@ export default function Home() {
     dashboard: {
       title: "Customer Analytics Dashboard",
       subtitle: "Credit card customer segmentation, risk profiling, and demographic targeting overview"
+    },
+    "card-intelligence": {
+      title: "Card Intelligence",
+      subtitle: "Customer-only smart card analysis, BIN identification & personalized financial health diagnostics"
     },
     overview: {
       title: "Portfolio & Data Overview",
@@ -365,6 +370,10 @@ export default function Home() {
               onNavigate={setCurrentTab}
               monthlyTrend={transactionData?.monthly_trend || []}
             />
+          )}
+
+          {currentTab === "card-intelligence" && (
+            <CardIntelligenceView />
           )}
 
           {currentTab === "overview" && (
