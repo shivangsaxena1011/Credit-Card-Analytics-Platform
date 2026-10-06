@@ -380,7 +380,15 @@ export function lookupBin(binInput: string): CardBinInfo {
     network = "Visa";
     themeGradient = "from-blue-950 via-indigo-950 to-slate-900";
     accentColor = "#3b82f6";
-    tier = cleanDigits.startsWith("416") || cleanDigits.startsWith("462") ? "Infinite" : "Signature";
+    const isInfinite = cleanDigits.startsWith("416") || cleanDigits.startsWith("462");
+    tier = isInfinite ? "Infinite" : "Signature";
+    if (isInfinite) {
+      forexMarkup = "2.0%";
+      loungeAccess = true;
+    } else if (cleanDigits.startsWith("400")) {
+      tier = "Classic";
+      loungeAccess = false;
+    }
     issuer = cleanDigits.startsWith("437") || cleanDigits.startsWith("416") ? "HDFC Bank" :
              cleanDigits.startsWith("472") || cleanDigits.startsWith("405") ? "SBI Card" :
              cleanDigits.startsWith("401") || cleanDigits.startsWith("431") ? "ICICI Bank" :

@@ -5,23 +5,15 @@ import {
   CreditCard,
   ShieldCheck,
   Sparkles,
-  Zap,
   TrendingUp,
   Percent,
   AlertTriangle,
   CheckCircle2,
   Lock,
   ArrowUpRight,
-  Info,
-  Sliders,
   Activity,
-  Award,
   Wallet,
-  Compass,
-  Gift,
-  RefreshCw,
-  Copy,
-  ChevronDown
+  Copy
 } from "lucide-react";
 import {
   lookupBin,
@@ -42,13 +34,27 @@ export const CardIntelligenceView: React.FC = () => {
   const [currentBalance, setCurrentBalance] = useState<number>(55000);
   const [paymentHabit, setPaymentHabit] = useState<"always_full" | "min_due" | "occasional_late">("always_full");
   const [accountVintageMonths, setAccountVintageMonths] = useState<number>(18);
-  const [isSpikySpend, setIsSpikySpend] = useState<boolean>(false);
+  const [isSpikySpend] = useState<boolean>(false);
   const [selectedRecCategory, setSelectedRecCategory] = useState<string>("All");
 
   // Dynamic BIN identification
   const cardInfo: CardBinInfo = useMemo(() => {
     return lookupBin(binInput);
   }, [binInput]);
+
+  // Safe handlers to prevent out-of-bounds or NaN
+  const handleCreditLimitChange = (newLimit: number) => {
+    const safeLimit = Math.max(1000, newLimit);
+    setCreditLimit(safeLimit);
+    if (currentBalance > safeLimit) {
+      setCurrentBalance(safeLimit);
+    }
+  };
+
+  const handleBalanceChange = (newBal: number) => {
+    const safeBal = Math.max(0, Math.min(newBal, creditLimit));
+    setCurrentBalance(safeBal);
+  };
 
   // Utilization calculations
   const utilizationPercent = useMemo(() => {
@@ -90,10 +96,18 @@ export const CardIntelligenceView: React.FC = () => {
     setBinInput(presetBin);
   };
 
-  const handleCopyCardInfo = () => {
-    navigator.clipboard.writeText(`${cardInfo.issuer} ${cardInfo.cardName} (${cardInfo.network} - BIN: ${cardInfo.bin})`);
-    setCopiedStatus(true);
-    setTimeout(() => setCopiedStatus(false), 2000);
+  const handleCopyCardInfo = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(
+          `${cardInfo.issuer} ${cardInfo.cardName} (${cardInfo.network} - BIN: ${cardInfo.bin})`
+        );
+        setCopiedStatus(true);
+        setTimeout(() => setCopiedStatus(false), 2000);
+      }
+    } catch (err) {
+      console.warn("Clipboard copy not supported or denied:", err);
+    }
   };
 
   // Format masked display: e.g. 4375 51•• •••• ••••
@@ -361,7 +375,7 @@ export const CardIntelligenceView: React.FC = () => {
               max={1500000}
               step={10000}
               value={creditLimit}
-              onChange={(e) => setCreditLimit(Number(e.target.value))}
+              onChange={(e) => handleCreditLimitChange(Number(e.target.value))}
               className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
             />
             <div className="flex justify-between text-[10px] text-slate-400">
@@ -383,7 +397,7 @@ export const CardIntelligenceView: React.FC = () => {
               max={creditLimit}
               step={2000}
               value={currentBalance}
-              onChange={(e) => setCurrentBalance(Number(e.target.value))}
+              onChange={(e) => handleBalanceChange(Number(e.target.value))}
               className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
             />
             <div className="flex justify-between text-[10px] text-slate-400">
