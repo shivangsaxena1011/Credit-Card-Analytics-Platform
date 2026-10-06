@@ -36,8 +36,6 @@ import {
 interface DashboardViewProps {
   overviewKPIs: OverviewKPIs | null;
   targetData: TargetScoringData | null;
-  experimentData?: any;
-  hypothesisData?: any;
   insightsData: InsightsData | null;
   onNavigate: (tab: string) => void;
   monthlyTrend: any[];

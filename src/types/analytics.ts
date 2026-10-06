@@ -230,123 +230,6 @@ export interface TargetScoringData {
   raw_weights: Record<string, number>;
 }
 
-export interface GroupStats {
-  label: string;
-  sample_size: number;
-  mean: number;
-  median: number;
-  std_dev: number;
-  variance: number;
-  min: number;
-  max: number;
-  q1: number;
-  q3: number;
-}
-
-export interface ExperimentData {
-  metric_name: string;
-  control_group: GroupStats;
-  test_group: GroupStats;
-  comparison: {
-    absolute_difference: number;
-    percentage_lift: number;
-  };
-  daily_trend: Array<{ date: string; Control: number | null; Test: number | null }>;
-  distribution: Array<{ bin: string; bin_center: number; Control: number; Test: number }>;
-}
-
-export interface PowerAnalysisData {
-  inputs: {
-    alpha: number;
-    power: number;
-    effect_size: number;
-    alternative: string;
-    groups: number;
-  };
-  required_sample_per_group: number;
-  total_required_sample: number;
-  interpretation: string;
-  sensitivity_table: Array<{
-    effect_size: number;
-    effect_label: string;
-    required_sample_per_group: number;
-    total_sample_required: number;
-    feasibility: string;
-  }>;
-  power_curve: Array<{ effect_size: number; required_sample: number }>;
-  power_vs_sample: Array<{ power: number; required_sample: number }>;
-}
-
-export interface HypothesisTestData {
-  test_type: string;
-  alternative: string;
-  alpha: number;
-  hypotheses: {
-    h0: string;
-    h1: string;
-  };
-  statistics: {
-    control_mean: number;
-    test_mean: number;
-    difference: number;
-    percentage_lift: number;
-    standard_error: number;
-    test_statistic: number;
-    p_value: number;
-    p_value_display: string;
-    critical_value: number;
-    effect_size_cohens_d: number;
-    degrees_of_freedom?: number | null;
-  };
-  confidence_interval: {
-    level: number;
-    lower: number | string;
-    upper: number | string;
-  };
-  decision: {
-    reject_h0: boolean;
-    decision_text: string;
-    badge_color: string;
-    practical_significance?: string;
-    is_practically_significant?: boolean;
-  };
-  robustness_analysis?: {
-    concurrence?: boolean;
-    mann_whitney_u?: {
-      test_name: string;
-      statistic: number;
-      u_statistic?: number;
-      p_value: number;
-      p_value_display: string;
-      reject_h0: boolean;
-      agrees_with_primary: boolean;
-    };
-    bootstrap?: {
-      test_name: string;
-      mean_diff: number;
-      lower_bound: number | string;
-      upper_bound: number | string;
-      bootstrap_p_value: number;
-    };
-    bootstrap_ci?: {
-      ci_lower: number;
-      ci_upper: number;
-      n_resamples: number;
-    };
-  };
-  interpretations: {
-    statistical: string;
-    business: string;
-    caveats: string[];
-  };
-  distribution_chart: {
-    curve_data: Array<{ x: number; density: number; in_rejection_region: boolean; rejection_fill: number }>;
-    test_statistic: number;
-    critical_value: number;
-    rejection_region_label: string;
-  };
-}
-
 export interface InsightItem {
   category: string;
   finding: string;
@@ -356,41 +239,9 @@ export interface InsightItem {
 
 export interface DecisionPanelData {
   target_segment: string;
-  campaign_outcome?: string;
-  statistical_significance?: string;
-  observed_lift?: string;
-  sample_adequacy?: string;
   recommendation: string;
   business_rationale: string;
   risks_and_caveats: string[];
-}
-
-export interface StatisticalReliability {
-  sample_size_adequacy?: {
-    status: string;
-    control_n: number;
-    test_n: number;
-    minimum_target: number;
-    is_valid: boolean;
-  };
-  variance_homogeneity?: {
-    variance_ratio: number;
-    assessment: string;
-    test_recommendation: string;
-  };
-  robustness_summary?: {
-    primary_test: string;
-    mann_whitney_u: string;
-    bootstrap_ci: string;
-    concurrence: string;
-  };
-  practical_significance?: {
-    hurdle_rate_pct: number;
-    observed_lift_pct: number;
-    clears_hurdle: boolean;
-    verdict: string;
-  };
-  warnings?: string[];
 }
 
 export interface AuditSummary {
@@ -403,6 +254,5 @@ export interface AuditSummary {
 export interface InsightsData {
   insights: InsightItem[];
   decision_panel: DecisionPanelData;
-  statistical_reliability?: StatisticalReliability;
   audit_summary?: AuditSummary;
 }

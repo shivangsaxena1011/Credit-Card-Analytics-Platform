@@ -1,70 +1,70 @@
-# CreditIQ Analytics — Methodology & Statistical Framework
+# CreditIQ Analytics Methodology
 
-This document outlines the statistical theory, data preprocessing protocols, mathematical formulations, and operational limitations embedded within **CreditIQ Analytics**.
-
----
-
-## 1. Preprocessing & Data Cleaning Decisions
-
-### 1.1 Non-Destructive Transformation Architecture
-In accordance with modern data engineering standards, raw ingested datasets are never mutated or permanently overwritten. Instead:
-- An immutable `raw_data` dictionary stores the ingested states.
-- The preprocessing pipeline generates a separate `cleaned_data` structure.
-- Before-and-after audit statistics are computed across every affected dimension to guarantee traceability.
-
-### 1.2 Imputation & Correction Strategies
-1. **Customer Annual Income**:
-   - *Issue*: Missing values in continuous income (~4.8% of cohort).
-   - *Rationale*: Mean imputation introduces severe bias when income distributions are right-skewed. Dropping records introduces attrition bias.
-   - *Strategy*: Occupation-wise median imputation:
-     $$\hat{Y}_{i} = \text{Median}(Y_{\text{occupation}(i)})$$
-2. **Customer Age Boundary Corrections**:
-   - *Issue*: Sensor or data-entry errors resulting in impossible ages ($< 15$ or $> 80$, e.g., 1, 2, 110, 120).
-   - *Strategy*: Invalid records are replaced using occupation-wise median age.
-3. **Credit Profile Deduplication**:
-   - *Issue*: Duplicate `cust_id` records due to multi-source ingestion.
-   - *Strategy*: Deterministic resolution retaining the most creditworthy/informative record: sorted descending by `credit_limit` and `credit_score` with `keep='first'`.
-4. **Credit Limit Imputation**:
-   - *Issue*: Missing limits on active credit files (~2.8%).
-   - *Strategy*: FICO bracket median imputation across standard credit score bands ($<580$, $580-669$, $670-739$, $740-799$, $800+$).
-5. **Debt Ceiling Business Rule**:
-   - *Issue*: Incurred balances exceeding total authorized credit limit (`outstanding_debt > credit_limit`).
-   - *Strategy*: Explicit business rule cap:
-     $$\text{debt}_{i} = \min(\text{debt}_{i}, \text{limit}_{i})$$
-6. **Transaction Platform & Zero-Amount Treatment**:
-   - *Issue*: Missing platforms (~1.5%) and $0.00 transaction amounts (~0.5%).
-   - *Strategy*: Platform mode imputation ('Amazon'). Zero amounts are contextually imputed using the product category's non-zero median transaction value rather than blindly dropped.
-7. **Extreme Outlier Capping (IQR)**:
-   - *Issue*: Extreme transaction values ($35,000 to $85,000) that distort standard error calculations.
-   - *Strategy*: Upper fence detection via $Q_3 + 5.0 \times \text{IQR}$ and winsorization cap at the 99.5th percentile.
+This document details the mathematical and statistical formulations governing CreditIQ Analytics, establishing rigorous standards for reproducible credit card customer analytics, dynamic data cleaning, and cohort targeting.
 
 ---
 
-## 2. Customer Segmentation Methodology
+## 1. Dynamic Data Cleaning & Preprocessing
 
-Customers are partitioned into life-cycle cohorts:
-- **18–25 (Young Adult / Early Career)**: Early credit history, digital native, high mobile checkout frequency, lower established limits.
-- **26–48 (Prime Earning / Family Building)**: Peak earning window, highest average credit limits and diversified card utilization.
-- **49–65+ (Mature / Wealth Accumulation)**: Conservative revolving leverage, high credit scores, substantial average ticket sizes.
+### 1.1 Dynamic Quality Score Formulation
+Rather than relying on a static mock score, the Data Quality Score $Q \in [0, 100]$ is computed dynamically from observed defects across Customer, Credit, and Transaction tables:
 
-For each cohort, 11 primary financial and transactional dimensions are dynamically calculated:
-1. Customer count ($N_s$)
-2. Customer percentage share ($P_s = N_s / N_{\text{total}}$)
-3. Average annual income ($\bar{I}_s$)
-4. Median annual income ($\tilde{I}_s$)
-5. Average credit score ($\bar{C}_s$)
-6. Average credit limit ($\bar{L}_s$)
-7. Average credit utilization ratio ($\bar{U}_s$)
-8. Average outstanding debt ($\bar{D}_s$)
-9. Average transaction amount ($\bar{T}_s$)
-10. Credit-card payment share ($S_{\text{cc}} = N_{\text{cc}} / N_{\text{txns}}$)
-11. Top merchant product categories
+$$Q = 100 \times \left(1.0 - \min\left(1.0, \frac{\sum_{t \in T} \sum_{d \in D_t} w_d \cdot n_{d,t}}{\sum_{t \in T} N_t \cdot K_t}\right)\right)$$
+
+Where:
+- $N_t$: Total record count in table $t \in \{\text{customers}, \text{credit\_profiles}, \text{transactions}\}$
+- $K_t$: Number of evaluated schema attributes for table $t$
+- $n_{d,t}$: Count of detected defects of category $d$
+- $w_d$: Defect severity penalty weight:
+  - Critical schema violation (missing primary key, duplicate account): $w_d = 2.0$
+  - Range anomaly (negative age, credit score $< 300$ or $> 850$): $w_d = 1.5$
+  - Business logic contradiction (debt $>$ credit limit, negative balance): $w_d = 1.5$
+  - Missing non-critical attribute (missing income): $w_d = 1.0$
+
+### 1.2 Imputation Rules
+- **Income Missingness**: Imputed using occupation-stratified medians $\tilde{y}_{\text{occ}} = \text{median}(Y \mid \text{Occupation} = \text{occ})$. If an occupation stratum is completely empty, the global portfolio median $\tilde{y}_{\text{global}}$ is utilized.
+- **Credit Limit Missingness**: Imputed by matching customer credit score to standard FICO tiers (Poor, Fair, Good, Very Good, Exceptional) and taking the bracket median limit.
+- **Credit Utilization**: Reported utilization is preserved when available. A derived utilization $\hat{u} = \text{Debt} / \text{Credit Limit} \times 100$ is computed for validation; records where $|\text{Reported} - \hat{u}| > 20\%$ are flagged as inconsistent without blindly overwriting historical reported values.
+- **Transaction Amount Anomaly Treatment**: Outliers exceeding $Q_3 + 3 \times \text{IQR}$ are capped at the 99th percentile rather than dropped, preserving aggregate transaction counts and platform cashflow integrity.
 
 ---
 
-## 3. Multi-Criteria Target Segment Recommendation Engine
+## 2. Customer, Credit Risk & Transaction Analysis
 
-### 3.1 Scoring Formulation
+### 2.1 Pearson Correlation Matrix
+For continuous variables $X$ and $Y$ (Income, Age, Credit Score, Credit Limit, Debt, Reported Utilization):
+
+$$r_{XY} = \frac{\sum_{i=1}^{n} (x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{n} (x_i - \bar{x})^2} \sqrt{\sum_{i=1}^{n} (y_i - \bar{y})^2}}$$
+
+---
+
+## 3. Cohort Segmentation Engine
+
+### 3.1 Age Cohort Binning
+Customers are assigned to mutually exclusive life-stage cohorts:
+- **Young Adults (18–25)**: Early career, entry-level income, active non-card transaction frequency.
+- **Prime Working (26–48)**: Career progression, peak earning and borrowing capacity.
+- **Mature (49–65+)**: Established asset base, conservative utilization, prime/super-prime credit scores.
+
+### 3.2 Segment Financial Benchmarks
+Across each cohort, 11 comparative dimensions are dynamically calculated:
+1. Customer Count & Portfolio Share ($N_s, \%_s$)
+2. Average & Median Age ($\bar{A}_s, \tilde{A}_s$)
+3. Average & Median Annual Income ($\bar{I}_s, \tilde{I}_s$)
+4. Average Credit Score ($\bar{C}_s$)
+5. Average Credit Limit ($\bar{L}_s$)
+6. Average Revolving Debt ($\bar{D}_s$)
+7. Average Credit Utilization Rate ($\bar{U}_s$)
+8. Total Transaction Volume ($\sum V_s$)
+9. Average Transaction Count per Account ($\bar{T}_s$)
+10. Credit-Card Payment Share ($S_{\text{cc}} = N_{\text{cc}} / N_{\text{txns}}$)
+11. Top Product Verticals (Electronics, Fashion, Grocery, etc.)
+
+---
+
+## 4. Multi-Criteria Target Segment Recommendation Engine
+
+### 4.1 Scoring Formulation
 Candidate segments are evaluated across six strategic dimensions:
 1. **Segment Size** ($w_1 = 0.20$): Scale of addressable account holders.
 2. **Income Opportunity** ($w_2 = 0.15$): Segment earning capability.
@@ -76,7 +76,7 @@ Candidate segments are evaluated across six strategic dimensions:
    *(Segments with lower existing credit card adoption possess greater upside for new card onboarding.)*
 6. **Category Engagement** ($w_6 = 0.10$): Concentration in high-margin merchant verticals (Electronics, Fashion, Beauty, Travel).
 
-### 3.2 Min-Max Normalization
+### 4.2 Min-Max Normalization
 Each raw dimension $x_{i}$ is normalized across candidate segments $k \in K$:
 $$u_i(k) = 0.20 + 0.80 \times \left( \frac{x_{i}(k) - \min_j x_{i}(j)}{\max_j x_{i}(j) - \min_j x_{i}(j)} \right)$$
 
@@ -87,63 +87,11 @@ The cohort with the highest Opportunity Score is recommended, and an empirical n
 
 ---
 
-## 4. Statistical Power & Sample Size Architecture
+## 5. Commercial Strategy & Risk Directives
 
-To prevent underpowered experiments where true campaign lift is erroneously dismissed (Type II error, $\beta$), required sample size is computed prior to experiment execution using `statsmodels.stats.power.TTestIndPower` and normal large-sample approximations.
-
-For a two-sample test comparing means with standard deviation $\sigma$ and effect size Cohen's $d = \frac{|\mu_2 - \mu_1|}{\sigma_{\text{pooled}}}$:
-
-$$N_{\text{group}} \approx 2 \times \left( \frac{Z_{1 - \alpha/2} + Z_{1 - \beta}}{d} \right)^2$$
-
-Where:
-- $\alpha = 0.05$ (Significance level, Type I error rate)
-- $1 - \beta = 0.80$ (Target statistical power)
-- $d = 0.20$ (Small effect size benchmark according to Cohen)
-
-Sensitivity grids evaluate sample requirements across $d \in \{0.10, 0.20, 0.30, 0.40, 0.50, 0.70, 1.00\}$.
-
----
-
-## 5. Statistical Hypothesis Testing Framework
-
-### 5.1 Hypotheses Definition
-When evaluating whether promotional incentives increase Average Transaction Value (ATV):
-- **Null Hypothesis ($H_0$)**: $\mu_{\text{test}} \le \mu_{\text{control}}$ (The campaign does not produce incremental spend).
-- **Alternative Hypothesis ($H_1$)**: $\mu_{\text{test}} > \mu_{\text{control}}$ (The campaign produces a statistically significant positive spend uplift).
-
-*(Bidirectional tests $\mu_{\text{test}} \ne \mu_{\text{control}}$ are also supported via UI configuration.)*
-
-### 5.2 Test Statistics
-Both Two-Sample Z-Test and Welch's t-Test are implemented with unrounded internal precision:
-
-1. **Standard Error of the Difference**:
-   $$\text{SE} = \sqrt{\frac{s_{\text{ctrl}}^2}{n_{\text{ctrl}}} + \frac{s_{\text{test}}^2}{n_{\text{test}}}}$$
-
-2. **Test Statistic**:
-   $$Z \text{ or } t = \frac{\bar{x}_{\text{test}} - \bar{x}_{\text{ctrl}}}{\text{SE}}$$
-
-3. **Welch-Satterthwaite Degrees of Freedom** (for t-test):
-   $$\nu \approx \frac{\left( \frac{s_1^2}{n_1} + \frac{s_2^2}{n_2} \right)^2}{\frac{(s_1^2 / n_1)^2}{n_1 - 1} + \frac{(s_2^2 / n_2)^2}{n_2 - 1}}$$
-
-4. **P-Value & Decision Rule**:
-   - Right-tailed: $p = 1 - \Phi(Z)$
-   - Decision:
-     - If $p < \alpha \implies \mathbf{Reject\ H_0}$
-     - If $p \ge \alpha \implies \mathbf{Fail\ to\ Reject\ H_0}$
-     - *(The term "Accept $H_0$" is strictly avoided as it is statistically erroneous.)*
-
-5. **Percentage Lift Formula**:
-   $$\text{Lift (\%)} = \left( \frac{\bar{x}_{\text{test}} - \bar{x}_{\text{ctrl}}}{\bar{x}_{\text{ctrl}}} \right) \times 100$$
-
----
-
-## 6. Analytical Assumptions & Limitations
-
-1. **Correlation vs. Causation**:
-   Pearson correlation coefficients confirm linear association between balance metrics and limits, but do not imply causality. Causal attribution is solely derived from the randomized A/B experiment.
-2. **Statistical Significance vs. Commercial Profitability**:
-   A statistically significant lift ($p < 0.05$) confirms that observed spend increases did not arise from random chance. However, it does not guarantee bank profitability until customer acquisition costs (CAC), cashback rewards liabilities, and merchant discount rates (MDR) are accounted for.
-3. **Novelty & Satiation Bias**:
-   Observed 30-day experimental lift may reflect initial promotional novelty. Long-term customer cohorts must be monitored for spend decay.
-4. **Staged Deployment Directive**:
-   Full portfolio rollout should be preceded by a staged Phase-2 rollout (e.g., 15% account exposure) to verify unit economics and 30-day credit delinquency stability.
+1. **Credit Utilization Governance**:
+   Early-career cohorts exhibiting high card conversion opportunity must be provisioned with tiered credit limits matched to verified starter salaries to mitigate portfolio non-performing loans (NPL).
+2. **Category Merchant Incentives**:
+   Cross-tab analyses demonstrate that category-focused cashback (e.g. digital retail and electronics) drives higher activation velocity than generic balance transfer promotions.
+3. **Staged Portfolio Rollout**:
+   Target segment campaigns should proceed via phased rollouts (e.g. 10–15% portfolio exposure) with continuous monitoring of 30-day delinquency and activation curves.
