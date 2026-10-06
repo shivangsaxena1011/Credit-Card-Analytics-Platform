@@ -5,7 +5,7 @@
   "description": "CreditIQ Analytics - Credit Card Customer Analytics, Segmentation & A/B Testing Platform",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "node scripts/build.js",
+    "build": "npm --prefix frontend run build",
     "start": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint"
   },

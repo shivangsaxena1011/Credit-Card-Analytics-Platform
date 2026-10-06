@@ -500,6 +500,7 @@ def export_csv(table_name: str):
 # ==========================================
 
 @app.get("/")
+@app.get("/api")
 def root():
     return {
         "status": "online",
