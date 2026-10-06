@@ -8,6 +8,8 @@ frontend/out/
 build/
 dist/
 /public/
+.vercel/
+**/.vercel/
 
 # Python
 __pycache__/
